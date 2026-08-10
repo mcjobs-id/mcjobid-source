@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "638482981265",
+    "project_id": "mcjobs-8ce49",
+    "storage_bucket": "mcjobs-8ce49.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:638482981265:android:9c943e3c2ba3eb9a077a30",
+        "android_client_info": {
+          "package_name": "com.isankamil.mcjobid"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCaATep711foYXIgzJJCjSwGX3HHfR5yDQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
