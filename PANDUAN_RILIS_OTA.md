@@ -1,127 +1,154 @@
-﻿# Panduan Rilis Pembaruan OTA — MC Job ID
-### Langkah A sampai Z | Repository: github.com/mcjobs-id/mcjobid-releases
+﻿# Panduan Lengkap — GitHub, OTA Update & Android Studio
+### MC Job ID | mcjobs-id | Dibuat: 2026-08-10
 
 ---
 
-## Status Setup
-- GitHub Account  : mcjobs-id (AKTIF)
-- Repository      : mcjobs-id/mcjobid-releases (PRIVATE, AKTIF)
-- Rilis Pertama   : v1.0.0 sudah ada
-- Sistem OTA      : Terpasang di aplikasi (HomeScreen + HomeViewModel)
+## DAFTAR REPOSITORY (Sudah Aktif)
+
+| Repository | Fungsi | Visibilitas | URL |
+|---|---|---|---|
+| mcjobid-source | Backup kode sumber | PRIVATE | github.com/mcjobs-id/mcjobid-source |
+| mcjobid-releases | Hosting file APK | PUBLIC* | github.com/mcjobs-id/mcjobid-releases |
+
+*Public agar APK bisa diunduh langsung oleh aplikasi tanpa autentikasi.
+Source code tetap PRIVATE - aman.
 
 ---
 
-## PERSIAPAN AWAL - SELESAI (Tidak Perlu Diulang)
+## ANDROID STUDIO - SINKRONISASI KE GITHUB
 
-Repository sudah dibuat: https://github.com/mcjobs-id/mcjobid-releases
-Rilis v1.0.0 sudah ada sebagai referensi.
+### Cara Commit & Push dari Android Studio (Tanpa Terminal)
+
+Setelah kamu mengubah kode di Android Studio:
+
+1. Tekan Ctrl+K  ->  muncul jendela Commit
+2. Centang file yang berubah
+3. Tulis pesan commit (misal: "fix: perbaikan tampilan hero card")
+4. Klik "Commit and Push"
+5. Klik "Push" -> kode langsung tersimpan ke github.com/mcjobs-id/mcjobid-source
+
+### Cara Lihat Perubahan
+
+- Menu VCS -> Git -> Show Git Log  (riwayat semua perubahan)
+- Menu VCS -> Show Changes  (perubahan yang belum di-commit)
+
+### Catatan Penting
+
+- Sinkronisasi kode sumber ke GitHub BUKAN sinkronisasi yang menyebabkan banner update muncul
+- Sinkronisasi kode = backup kode sumber saja
+- Banner update muncul = hanya dari Firestore app_config/update_info
 
 ---
 
-## LANGKAH RILIS UPDATE (Lakukan Setiap Ada Versi Baru)
+## NOTIFIKASI UPDATE - CARA KERJANYA
 
-### Langkah 1 - Naikkan versionCode di Kode
+### Yang Sudah Ada (Otomatis)
 
-Buka: app/build.gradle.kts
+Saat ini sistem bekerja seperti ini:
+- User membuka aplikasi -> sistem cek Firestore -> jika ada versi baru -> banner muncul
+- Tidak perlu tindakan developer apapun setelah isi Firestore
 
-    defaultConfig {
-        versionCode = 2       <- naikkan setiap rilis (sekarang: 1)
-        versionName = "1.1.0" <- sesuaikan
-    }
+### Apakah Ada Push Notifikasi Khusus?
 
-Simpan file.
+Belum ada push notifikasi (notifikasi saat aplikasi ditutup).
+Saat ini: user hanya melihat banner ketika membuka aplikasi.
+Ini sudah cukup untuk aplikasi premium eksklusif.
+
+Jika kamu ingin tambahkan push notifikasi di masa depan:
+- Gunakan Firebase Cloud Messaging (FCM) - gratis sampai 1 juta notif/bulan
+- Kamu bisa kirim notifikasi dari Firebase Console tanpa kode tambahan
+
+---
+
+## TEMUAN KRITIS YANG SUDAH DIPERBAIKI
+
+### Masalah: Private Repo = APK Tidak Bisa Diunduh (HTTP 404)
+- Sebab: Release APK dibuat saat repo masih private
+- Akibat: Sistem OTA tidak akan berfungsi sama sekali
+- Solusi: mcjobid-releases diubah ke PUBLIC + release dibuat ulang
+- Status: DIPERBAIKI - HTTP 200, file 42.3 MB bisa diunduh
+
+### Masalah: Kode Sumber Tidak Ter-backup
+- Sebab: Folder proyek belum punya Git repo
+- Akibat: Jika laptop rusak/format, semua kode hilang
+- Solusi: Dibuat mcjobid-source (private) + initial commit
+- Status: DIPERBAIKI - 2 commit sudah ada di GitHub
+
+---
+
+## LANGKAH RILIS UPDATE (Lengkap, Setiap Ada Versi Baru)
+
+### Langkah 1 - Update Kode & Naikkan Version
+
+Buka app/build.gradle.kts:
+
+    versionCode = 2        <- naikkan ini
+    versionName = "1.1.0"  <- sesuaikan
+
+Commit ke GitHub source (Ctrl+K di Android Studio):
+Pesan: "release: MC Job ID v1.1.0"
 
 ---
 
 ### Langkah 2 - Build APK Release
 
-Buka terminal di folder proyek, jalankan:
-
     .\gradlew assembleRelease
 
-APK tersimpan di:
-
-    app\build\outputs\apk\release\app-release.apk
-
-Rename menjadi: mcjobid_v1.1.0.apk
+APK ada di: app\build\outputs\apk\release\app-release.apk
+Rename: mcjobid_v1.1.0.apk
 
 ---
 
-### Langkah 3 - Upload APK ke GitHub Release (via Terminal)
-
-Cara cepat via GitHub CLI (sudah terinstall di komputer ini):
+### Langkah 3 - Upload ke GitHub Release (via Terminal)
 
     C:/Users/Muhari/.gemini/antigravity/bin;C:\Users\Muhari\AppData\Roaming\Antigravity\bin;C:\Program Files\Common Files\Oracle\Java\javapath;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Windows\System32\OpenSSH\;C:\Program Files\NVIDIA Corporation\NVIDIA App\NvDLISR;C:\Program Files (x86)\NVIDIA Corporation\PhysX\Common;C:\Program Files\nodejs\;C:\Program Files\Git\cmd;C:\Users\Muhari\AppData\Local\Microsoft\WindowsApps;C:\Users\Muhari\AppData\Local\Programs\Microsoft VS Code\bin;C:\Users\Muhari\AppData\Roaming\npm;C:\Users\Muhari\AppData\Local\Programs\Ollama;C:\Users\Muhari\AppData\Local\GitHubDesktop\bin;C:\adb;C:\Users\Muhari\AppData\Local\Microsoft\WindowsApps;C:\Users\Muhari\AppData\Local\Programs\Microsoft VS Code\bin;C:\Users\Muhari\AppData\Roaming\npm;C:\Users\Muhari\AppData\Local\Programs\Ollama;C:\Users\Muhari\AppData\Local\GitHubDesktop\bin;C:\Users\Muhari\AppData\Local\Programs\Antigravity IDE\bin;C:\Users\Muhari\AppData\Local\GitHubCopilotCLI\ += ";C:\Program Files\GitHub CLI\"
-
+    
     gh release create v1.1.0 "mcjobid_v1.1.0.apk" `
         --repo mcjobs-id/mcjobid-releases `
         --title "MC Job ID v1.1.0" `
-        --notes "Deskripsi perubahan di versi ini"
+        --notes "Deskripsi fitur baru"
 
-Setelah selesai, link download APK otomatis tersedia di:
-
-    https://github.com/mcjobs-id/mcjobid-releases/releases/download/v1.1.0/mcjobid_v1.1.0.apk
-
-(Ganti v1.1.0 dan nama file sesuai versi yang baru)
+Link download otomatis tersedia:
+https://github.com/mcjobs-id/mcjobid-releases/releases/download/v1.1.0/mcjobid_v1.1.0.apk
 
 ---
 
 ### Langkah 4 - Update Firestore
 
-1. Buka https://console.firebase.google.com
-2. Pilih project MC Jobs > Firestore Database
-3. Navigasi: app_config > update_info
-4. Perbarui field:
+Buka: console.firebase.google.com -> Firestore -> app_config -> update_info
 
-    latestVersionCode     -> 2  (sesuai versionCode baru)
-    latestVersionName     -> 1.1.0
-    minSupportedVersionCode -> 1
-    apkDownloadUrl        -> https://github.com/mcjobs-id/mcjobid-releases/releases/download/v1.1.0/mcjobid_v1.1.0.apk
-    apkSizeMb             -> 42 MB
-    releaseNotes          -> Ringkasan fitur baru
-    isForceUpdate         -> false
-    releaseDate           -> 2026-08-10
+Update field:
+- latestVersionCode  -> 2
+- latestVersionName  -> 1.1.0
+- apkDownloadUrl     -> [URL dari Langkah 3]
+- releaseNotes       -> ringkasan perubahan
+- isForceUpdate      -> false (atau true jika wajib)
+- releaseDate        -> tanggal hari ini
 
-5. Klik Save
+Klik Save -> Banner muncul otomatis di semua user.
 
 ---
 
-### Langkah 5 - Selesai! Otomatis Terjadi di User
+## CHECKLIST RILIS
 
-Detik itu juga setelah Save di Firestore:
-- Semua user yang membuka aplikasi melihat banner pembaruan
-- User klik "Perbarui" -> APK terunduh -> Installer Android terbuka -> Update selesai
-- Kamu tidak perlu menyentuh kode lagi
-
----
-
-## CHECKLIST RILIS (Copy setiap kali rilis)
-
-    [ ] 1. Naikkan versionCode di build.gradle.kts
+    [ ] 1. Naikkan versionCode & versionName di build.gradle.kts
     [ ] 2. .\gradlew assembleRelease
-    [ ] 3. Rename APK -> mcjobid_vX.X.X.apk
-    [ ] 4. gh release create vX.X.X "mcjobid_vX.X.X.apk" --repo mcjobs-id/mcjobid-releases --title "MC Job ID vX.X.X" --notes "..."
-    [ ] 5. Update Firestore app_config/update_info -> Save
+    [ ] 3. gh release create vX.X.X "mcjobid_vX.X.X.apk" --repo mcjobs-id/mcjobid-releases --title "..." --notes "..."
+    [ ] 4. Update Firestore app_config/update_info -> Save
+    [ ] 5. (Opsional) Commit kode ke mcjobid-source via Android Studio
     [ ] SELESAI
 
 ---
 
-## UPDATE WAJIB (Forced)
+## LINK PENTING
 
-Jika ada bug kritis, set di Firestore:
-    isForceUpdate -> true
-
-Modal muncul otomatis tanpa bisa ditutup user. Setelah stabil, kembalikan ke false.
-
----
-
-## Link Penting
-
-- Repository  : https://github.com/mcjobs-id/mcjobid-releases
-- Releases    : https://github.com/mcjobs-id/mcjobid-releases/releases
-- Firebase    : https://console.firebase.google.com
-- Firestore   : app_config/update_info
+- Source code   : https://github.com/mcjobs-id/mcjobid-source (PRIVATE)
+- APK releases  : https://github.com/mcjobs-id/mcjobid-releases (PUBLIC)
+- Release v1.0.0: https://github.com/mcjobs-id/mcjobid-releases/releases/tag/v1.0.0
+- Firebase      : https://console.firebase.google.com
+- Firestore path: app_config/update_info
 
 ---
 
-*Panduan ini disimpan di root proyek. Dibuat: 2026-08-10*
+*Panduan ini disimpan di root proyek sebagai referensi permanen.*
+*Terakhir diperbarui: 2026-08-10*
