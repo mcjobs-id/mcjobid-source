@@ -279,44 +279,45 @@ export const TodoPage: React.FC<TodoPageProps> = ({ todos, onSaveTodo, onDeleteT
           <button
             onClick={() => setSelectedStatus('ALL')}
             className={`btn btn-sm ${selectedStatus === 'ALL' ? 'btn-primary' : 'btn-secondary'}`}
-            style={{background: selectedStatus === 'ALL' ? '#7C3AED' : undefined, borderColor: selectedStatus === 'ALL' ? '#7C3AED' : undefined, whiteSpace:'nowrap', flexShrink:0}}
+            style={{background: selectedStatus === 'ALL' ? '#7C3AED' : undefined, borderColor: selectedStatus === 'ALL' ? '#7C3AED' : undefined, color: selectedStatus === 'ALL' ? '#FFFFFF' : undefined, whiteSpace:'nowrap', flexShrink:0}}
           >
             Semua ({totalCount})
           </button>
           <button
             onClick={() => setSelectedStatus('PENDING')}
             className={`btn btn-sm ${selectedStatus === 'PENDING' ? 'btn-primary' : 'btn-secondary'}`}
-            style={{whiteSpace:'nowrap', flexShrink:0}}
+            style={{background: selectedStatus === 'PENDING' ? '#7C3AED' : undefined, borderColor: selectedStatus === 'PENDING' ? '#7C3AED' : undefined, color: selectedStatus === 'PENDING' ? '#FFFFFF' : undefined, whiteSpace:'nowrap', flexShrink:0}}
           >
             Tertunda ({pendingCount})
           </button>
           <button
             onClick={() => setSelectedStatus('DONE')}
             className={`btn btn-sm ${selectedStatus === 'DONE' ? 'btn-primary' : 'btn-secondary'}`}
-            style={{whiteSpace:'nowrap', flexShrink:0}}
+            style={{background: selectedStatus === 'DONE' ? '#7C3AED' : undefined, borderColor: selectedStatus === 'DONE' ? '#7C3AED' : undefined, color: selectedStatus === 'DONE' ? '#FFFFFF' : undefined, whiteSpace:'nowrap', flexShrink:0}}
           >
             Selesai ({completedCount})
           </button>
         </div>
 
         {/* Category Filter Chips (Responsive Scroll) */}
-        <div style={{display:'flex', gap:'6px', overflowX:'auto', width:'100%', paddingBottom:'4px'}} className="scrollbar-none">
+        <div style={{display:'flex', gap:'8px', overflowX:'auto', width:'100%', paddingBottom:'4px'}} className="scrollbar-none">
           {[
             { id: 'SEMUA', label: 'Semua Kategori' },
-            { id: 'PERSIAPAN', label: 'Persiapan Event' },
-            { id: 'HARI_H', label: 'Hari-H Acara' },
-            { id: 'PASCA_EVENT', label: 'Pasca Acara' },
-            { id: 'KARIER', label: 'Karier & Portofolio' },
+            { id: 'PERSIAPAN', label: 'Persiapan Event 🎯' },
+            { id: 'HARI_H', label: 'Hari-H Acara 🎤' },
+            { id: 'PASCA_EVENT', label: 'Pasca Acara 💼' },
+            { id: 'KARIER', label: 'Karier & Portofolio 🚀' },
           ].map(c => (
             <button
               key={c.id}
               onClick={() => setSelectedCategory(c.id)}
-              className={`badge ${selectedCategory === c.id ? 'badge-primary' : 'badge-neutral'}`}
+              className="badge"
               style={{
-                cursor:'pointer', padding:'6px 12px', fontSize:'12px', borderRadius:'9999px',
-                border: selectedCategory === c.id ? 'none' : '1px solid var(--border)',
-                background: selectedCategory === c.id ? '#7C3AED' : 'var(--bg-surface)',
-                whiteSpace:'nowrap', flexShrink:0
+                cursor:'pointer', padding:'8px 14px', fontSize:'12px', fontWeight:'700', borderRadius:'9999px',
+                border: selectedCategory === c.id ? '1px solid #7C3AED' : '1px solid var(--border)',
+                background: selectedCategory === c.id ? '#7C3AED' : 'var(--bg-surface-2)',
+                color: selectedCategory === c.id ? '#FFFFFF' : 'var(--text-2)',
+                whiteSpace:'nowrap', flexShrink:0, transition:'all 0.15s'
               }}
             >
               {c.label}

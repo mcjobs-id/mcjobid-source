@@ -85,7 +85,7 @@ export const HomePage: React.FC<HomePageProps> = ({
   ].filter(item => (qaConfig as any)[item.key]);
 
   return (
-    <div className="animate-fade-in" style={{maxWidth:'1280px', margin:'0 auto', display:'flex', flexDirection:'column', gap:'24px', paddingBottom:'16px', position:'relative'}}>
+    <div className="animate-fade-in" style={{maxWidth:'1280px', margin:'0 auto', display:'flex', flexDirection:'column', gap:'24px', paddingBottom:'16px'}}>
 
       {/* ── GREETING ROW ── */}
       <div style={{display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:'16px', flexWrap:'wrap'}}>
@@ -349,7 +349,7 @@ export const HomePage: React.FC<HomePageProps> = ({
 
       {/* ── FLOATING SPEED DIAL FAB (Android quick action) ── */}
       {qaConfig.masterEnabled && fabItems.length > 0 && (
-        <div style={{position:'fixed', bottom:'80px', right:'24px', zIndex:900, display:'flex', flexDirection:'column', alignItems:'flex-end', gap:'10px'}}>
+        <div style={{position:'fixed', bottom:'85px', right:'20px', zIndex:9999, display:'flex', flexDirection:'column', alignItems:'flex-end', gap:'10px'}}>
           {/* Expanded Speed Dial Items */}
           {qaOpen && (
             <div className="animate-fade-in" style={{display:'flex', flexDirection:'column', alignItems:'flex-end', gap:'10px', marginBottom:'4px'}}>

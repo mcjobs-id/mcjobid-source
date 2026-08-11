@@ -54,10 +54,14 @@ export const Navbar: React.FC<NavbarProps> = ({ title = 'mcjob.id', subtitle }) 
           onClick={() => navigate('/profile')}
           style={{display:'flex', alignItems:'center', gap:'8px', padding:'5px 10px 5px 5px', borderRadius:'9999px', background:'var(--bg-surface-2)', border:'1px solid var(--border)', cursor:'pointer'}}
         >
-          <div style={{width:'24px', height:'24px', borderRadius:'50%', background:'var(--primary-light)', border:'1px solid rgba(79,70,229,0.25)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0}}>
-            <span style={{fontSize:'10px', fontWeight:'700', color:'var(--primary)'}}>
-              {userProfile?.displayName?.charAt(0).toUpperCase() || 'M'}
-            </span>
+          <div style={{width:'24px', height:'24px', borderRadius:'50%', background:'var(--primary-light)', border:'1px solid rgba(79,70,229,0.25)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, overflow:'hidden'}}>
+            {userProfile?.photoUrl || userProfile?.photoUri ? (
+              <img src={userProfile.photoUrl || userProfile.photoUri} alt="Profile" style={{width:'100%', height:'100%', objectFit:'cover'}} />
+            ) : (
+              <span style={{fontSize:'10px', fontWeight:'700', color:'var(--primary)'}}>
+                {userProfile?.displayName?.charAt(0).toUpperCase() || 'M'}
+              </span>
+            )}
           </div>
           <span style={{fontSize:'12px', fontWeight:'600', color:'var(--text-2)', maxWidth:'100px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>
             {userProfile?.displayName || 'MC Studio'}

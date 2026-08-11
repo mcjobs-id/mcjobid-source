@@ -93,10 +93,14 @@ export const MorePage: React.FC<MorePageProps> = ({ onNavigateTab }) => {
         className="hover-opacity"
       >
         <div style={{display:'flex', alignItems:'center', gap:'14px'}}>
-          <div style={{width:'48px', height:'48px', borderRadius:'50%', background:'rgba(255,255,255,0.2)', border:'2px solid rgba(255,255,255,0.35)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0}}>
-            <span style={{fontSize:'18px', fontWeight:'800', color:'white'}}>
-              {userProfile?.displayName?.charAt(0).toUpperCase() || 'M'}
-            </span>
+          <div style={{width:'48px', height:'48px', borderRadius:'50%', background:'rgba(255,255,255,0.2)', border:'2px solid rgba(255,255,255,0.35)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, overflow:'hidden'}}>
+            {userProfile?.photoUrl || userProfile?.photoUri ? (
+              <img src={userProfile.photoUrl || userProfile.photoUri} alt="Profile" style={{width:'100%', height:'100%', objectFit:'cover'}} />
+            ) : (
+              <span style={{fontSize:'18px', fontWeight:'800', color:'white'}}>
+                {userProfile?.displayName?.charAt(0).toUpperCase() || 'M'}
+              </span>
+            )}
           </div>
           <div>
             <h3 style={{fontSize:'16px', fontWeight:'700', color:'white', letterSpacing:'-0.01em'}}>
