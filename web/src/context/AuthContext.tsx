@@ -1,8 +1,8 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import type { User } from 'firebase/auth';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth } from '../firebase/config';
-import { getUserProfile, saveUserProfile } from '../services/firebaseService';
+import { getUserProfile, saveUserProfile, subscribeUserProfile } from '../services/firebaseService';
 import type { UserProfile } from '../types';
 
 // ── Auth States (explicit, never ambiguous) ──────────────────
@@ -11,13 +11,13 @@ export type AuthState =
   | 'UNAUTHENTICATED'  // Confirmed: no user
   | 'PROFILE_LOADING'  // User authenticated, fetching profile from Firestore
   | 'PROFILE_READY'    // User + profile fully loaded — APP IS USABLE
-  | 'PROFILE_ERROR';   // Profile fetch failed, user is authenticated but profile unavailable
+  | 'PROFILE_ERROR';   // Profile fetch failed
 
 interface AuthContextType {
   currentUser: User | null;
   userProfile: UserProfile | null;
   authState: AuthState;
-  loading: boolean;          // true when LOADING or PROFILE_LOADING
+  loading: boolean;
   logout: () => Promise<void>;
   refreshProfile: () => Promise<void>;
   updateContextProfile: (updated: Partial<UserProfile>) => void;
@@ -32,7 +32,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [authState, setAuthState] = useState<AuthState>('LOADING');
-  const [loginError, setLoginError] = useState<string | null>(null);
+  const [loginError] = useState<string | null>(null);
+  const sessionVersionRef = useRef(0);
 
   const loading = authState === 'LOADING' || authState === 'PROFILE_LOADING';
 
@@ -41,13 +42,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       let profile = await getUserProfile(user.uid);
       if (!profile) {
-        // First-time user without profile: create a default one
         profile = {
           uid: user.uid,
           displayName: user.displayName || 'MC Professional',
           name: user.displayName || 'MC Professional',
           email: user.email || '',
           photoUrl: user.photoURL || undefined,
+          photoUri: user.photoURL || undefined,
           profileCompleted: false,
           defaultDpPercentage: 30,
           createdAt: new Date().toISOString(),
@@ -55,47 +56,73 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         };
         await saveUserProfile(profile);
       } else {
-        // Ensure uid is always present in profile
         profile = { ...profile, uid: user.uid };
       }
-      
-      // Generation guard: abort if the session has changed while we were fetching
+
       if (sessionVersionRef.current !== expectedSession) return;
-      
+
       setUserProfile(profile);
+      try {
+        localStorage.setItem('mcjobid_user_profile', JSON.stringify(profile));
+      } catch (_) { /* ignore */ }
       setAuthState('PROFILE_READY');
     } catch (err) {
       if (sessionVersionRef.current !== expectedSession) return;
       console.error('AuthContext: Failed to fetch/init profile:', err);
-      // DO NOT set a fake usable profile on error. Let the app handle the PROFILE_ERROR state.
       setUserProfile(null);
       setAuthState('PROFILE_ERROR');
     }
   }, []);
 
-  // Add a session version ref to guard against race conditions
-  const sessionVersionRef = React.useRef(0);
-
   useEffect(() => {
+    // Safety timeout: if Firebase auth doesn't respond in 8s, treat as unauthenticated
+    const timeout = setTimeout(() => {
+      setAuthState(prev => prev === 'LOADING' ? 'UNAUTHENTICATED' : prev);
+    }, 8000);
+
+    let profileUnsub: (() => void) | null = null;
+
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      // Increment session version whenever auth changes to invalidate pending work
+      clearTimeout(timeout);
       sessionVersionRef.current += 1;
       const currentSession = sessionVersionRef.current;
-      
       setCurrentUser(user);
+
+      if (profileUnsub) {
+        profileUnsub();
+        profileUnsub = null;
+      }
+
       if (user) {
-        await fetchAndInitProfile(user, currentSession);
+        setAuthState('PROFILE_LOADING');
+        profileUnsub = subscribeUserProfile(user.uid, (profile) => {
+          if (sessionVersionRef.current !== currentSession) return;
+          if (profile) {
+            setUserProfile(profile);
+            try {
+              localStorage.setItem('mcjobid_user_profile', JSON.stringify(profile));
+            } catch (_) {}
+            setAuthState('PROFILE_READY');
+          } else {
+            // Profile document doesn't exist yet, initialize it
+            fetchAndInitProfile(user, currentSession);
+          }
+        });
       } else {
         setUserProfile(null);
         setAuthState('UNAUTHENTICATED');
       }
     });
 
-    return () => unsubscribe();
+    return () => {
+      clearTimeout(timeout);
+      if (profileUnsub) profileUnsub();
+      unsubscribe();
+    };
   }, [fetchAndInitProfile]);
 
   const logout = async () => {
-    sessionVersionRef.current += 1; // Invalidate any pending profile tasks
+    sessionVersionRef.current += 1;
     await signOut(auth);
     setCurrentUser(null);
     setUserProfile(null);
@@ -110,7 +137,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const updateContextProfile = useCallback((updated: Partial<UserProfile>) => {
-    setUserProfile(prev => prev ? { ...prev, ...updated } : null);
+    setUserProfile(prev => {
+      if (!prev) return null;
+      const next = { ...prev, ...updated };
+      try {
+        localStorage.setItem('mcjobid_user_profile', JSON.stringify(next));
+      } catch (_) { /* ignore */ }
+      return next;
+    });
   }, []);
 
   return (

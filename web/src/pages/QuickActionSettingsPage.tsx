@@ -107,28 +107,15 @@ export const QuickActionSettingsPage: React.FC<QuickActionSettingsPageProps> = (
   const enabledCount = items.filter(i => config[i.key]).length;
 
   return (
-    <div className="animate-fade-in" style={{maxWidth:'850px', margin:'0 auto', paddingBottom:'32px'}}>
+    <div className="animate-fade-in" style={{width:'100%', paddingBottom:'32px'}}>
       
-      {/* ── HEADER ── */}
-      <div className="page-header" style={{alignItems:'center'}}>
-        <div style={{display:'flex', alignItems:'center', gap:'16px'}}>
-          <button onClick={onBack} className="btn btn-ghost" style={{padding:'0 8px', marginLeft:'-8px'}}>
-            <ArrowLeft size={18} />
-          </button>
-          <div>
-            <h1 className="page-title" style={{display:'flex', alignItems:'center', gap:'8px'}}>
-              <Zap size={20} color="var(--warning)" /> Pintasan Cepat Dasbor
-            </h1>
-            <p className="page-subtitle">Kustomisasi tombol melayang (FAB) & hak akses fitur cepat di Beranda.</p>
-          </div>
-        </div>
-
-        {savedMessage && (
+      {savedMessage && (
+        <div style={{marginBottom:'20px'}}>
           <span className="badge badge-success animate-fade-in" style={{fontSize:'12px', padding:'6px 12px'}}>
             <CheckCircle2 size={13} /> Konfigurasi Tersimpan!
           </span>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* ── MASTER TOGGLE HERO ── */}
       <div className="card" style={{padding:'24px', marginBottom:'24px', background:'var(--primary-light)', border:'1px solid rgba(79,70,229,0.2)'}}>

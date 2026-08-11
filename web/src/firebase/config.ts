@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { getFirestore, enableIndexedDbPersistence } from 'firebase/firestore';
+import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
 const firebaseConfig = {
@@ -9,25 +9,26 @@ const firebaseConfig = {
   projectId: "mcjobs-8ce49",
   storageBucket: "mcjobs-8ce49.firebasestorage.app",
   messagingSenderId: "638482981265",
-  appId: "1:638482981265:web:mcjobid"
+  appId: "1:638482981265:web:5f3a8b2c1d4e9f7a"
 };
 
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
-export const db = getFirestore(app);
-export const storage = getStorage(app);
 
-// Enable offline persistence for PWA/Mobile experience
-try {
-  enableIndexedDbPersistence(db).catch((err) => {
-    if (err.code === 'failed-precondition') {
-      console.warn('Persistence failed: Multiple tabs open');
-    } else if (err.code === 'unimplemented') {
-      console.warn('Persistence not supported by browser');
-    }
-  });
-} catch (e) {
-  console.log('IndexedDB persistence init note:', e);
-}
+// Use new persistent cache API (replaces deprecated enableIndexedDbPersistence)
+export const db = (() => {
+  try {
+    return initializeFirestore(app, {
+      localCache: persistentLocalCache({
+        tabManager: persistentMultipleTabManager()
+      })
+    });
+  } catch (e) {
+    // Already initialized or not supported — fall back to default Firestore
+    return getFirestore(app);
+  }
+})();
+
+export const storage = getStorage(app);
 
 export default app;

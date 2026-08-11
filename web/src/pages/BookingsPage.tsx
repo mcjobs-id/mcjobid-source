@@ -96,14 +96,14 @@ export const BookingsPage: React.FC<BookingsPageProps> = ({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-extrabold text-slate-900 dark:text-white">Jadwal Acara MC</h2>
-          <p className="text-xs text-slate-400">Total {bookings.length} Acara Terdaftar</p>
+          <h2 className="text-xl font-extrabold text-slate-900 dark:text-white">Jadwal Job</h2>
+          <p className="text-xs text-slate-400">Total {bookings.length} job terdaftar</p>
         </div>
         <button
           onClick={() => setIsModalOpen(true)}
-          className="btn-primary py-2.5 px-4 text-xs font-bold shadow-md"
+          className="btn-primary py-2.5 px-4 text-xs font-bold shadow-md flex items-center gap-1.5"
         >
-          <Plus className="w-4 h-4 stroke-[3]" /> Tambah Job
+          <Plus className="w-4 h-4 stroke-[3]" /> Buat Job
         </button>
       </div>
 

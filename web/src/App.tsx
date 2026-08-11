@@ -1,5 +1,5 @@
 import React, { useState, useEffect, createContext, useContext } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation, useParams } from 'react-router-dom';
+import { HashRouter, Routes, Route, Navigate, useNavigate, useLocation, useParams } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Sidebar, type TabType } from './components/Sidebar';
 import { Navbar } from './components/Navbar';
@@ -22,8 +22,9 @@ import { FollowUpPage } from './pages/FollowUpPage';
 import { TodoPage } from './pages/TodoPage';
 import { NotificationPage } from './pages/NotificationPage';
 import { QuickActionSettingsPage } from './pages/QuickActionSettingsPage';
+import { TestimonialPage } from './pages/TestimonialPage';
 
-import type { Booking, Expense, Payment, Client, RateCard, TodoItem } from './types';
+import type { Booking, Expense, Payment, Client, RateCard, TodoItem, Testimonial } from './types';
 import {
   subscribeBookings, saveBooking, deleteBooking,
   subscribeExpenses, saveExpense, deleteExpense,
@@ -31,7 +32,9 @@ import {
   subscribeClients, saveClient, deleteClient,
   subscribeRateCards, saveRateCard, deleteRateCard,
   saveUserProfile,
-  subscribeTodos, saveTodo, deleteTodo
+  subscribeTodos, saveTodo, deleteTodo,
+  subscribeTestimonials, saveTestimonial, deleteTestimonial,
+  saveInvoice
 } from './services/firebaseService';
 
 // Global outlet context
@@ -63,6 +66,7 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
   const isDayMode = path.startsWith('/daymode');
   const hideBottomNav = isDayMode;
+  const isSubPage = !['/home', '/agenda', '/clients', '/finance', '/more', '/'].includes(path);
 
   const getPageTitle = () => {
     if (path.startsWith('/booking/')) return 'Detail Job Acara';
@@ -86,7 +90,7 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   };
 
   return (
-    <div className="app-layout">
+    <div className={`app-layout${isDayMode ? ' daymode-active' : ''}`}>
       {!isDayMode && (
         <Sidebar
           activeTab={activeTab}
@@ -98,20 +102,36 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         {!isDayMode && (
           <Navbar
             title={getPageTitle()}
+            showBack={isSubPage}
+            onBack={() => navigate(-1)}
           />
         )}
         <main className="content-area">{children}</main>
       </div>
       {!isDayMode && !hideBottomNav && (
-        <div className="md:hidden" style={{ display: 'block' }}>
-          <BottomNav
-            activeTab={activeTab}
-            onChangeTab={(t) => navigate(`/${t}`)}
-          />
-        </div>
+        <BottomNav
+          activeTab={activeTab}
+          onChangeTab={(t) => navigate(`/${t}`)}
+        />
       )}
     </div>
   );
+};
+
+// ── Scroll To Top on Route Change ────────────────────────────
+const ScrollToTop: React.FC = () => {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    const resetScroll = () => {
+      const contentEl = document.querySelector('.content-area');
+      if (contentEl) contentEl.scrollTop = 0;
+    };
+    resetScroll();
+    const animId = requestAnimationFrame(resetScroll);
+    return () => cancelAnimationFrame(animId);
+  }, [pathname]);
+  return null;
 };
 
 // ── Loading Screen ─────────────────────────────────────────────
@@ -140,9 +160,10 @@ const AppLoadingScreen = () => (
 
 // ── Main App ───────────────────────────────────────────────────
 const MainApp: React.FC = () => {
-  const { currentUser, authState, loading } = useAuth();
+  const { currentUser, authState, loading, logout } = useAuth();
 
   const [showWizardModal, setShowWizardModal] = useState(false);
+  const [selectedRateCard, setSelectedRateCard] = useState<RateCard | null>(null);
 
   // Firestore collections
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -151,8 +172,7 @@ const MainApp: React.FC = () => {
   const [clients, setClients] = useState<Client[]>([]);
   const [rateCards, setRateCards] = useState<RateCard[]>([]);
   const [todos, setTodos] = useState<TodoItem[]>([]);
-
-
+  const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
 
   useEffect(() => {
     // Only subscribe to user data if the profile is fully ready.
@@ -165,6 +185,7 @@ const MainApp: React.FC = () => {
       subscribeClients(uid, setClients),
       subscribeRateCards(uid, setRateCards),
       subscribeTodos(uid, setTodos),
+      subscribeTestimonials(uid, setTestimonials),
     ];
     return () => unsubs.forEach(u => u());
   }, [currentUser, authState]);
@@ -191,7 +212,7 @@ const MainApp: React.FC = () => {
         </p>
         <div style={{ display: 'flex', gap: '12px', marginTop: '12px' }}>
           <button className="btn btn-primary" onClick={() => window.location.reload()}>Coba Lagi</button>
-          <button className="btn btn-secondary" onClick={useAuth().logout}>Keluar</button>
+          <button className="btn btn-secondary" onClick={logout}>Keluar</button>
         </div>
       </div>
     );
@@ -200,61 +221,146 @@ const MainApp: React.FC = () => {
   // ── Handlers ─────────────────────────────────────────────────
 
   const handleSaveBooking = async (b: Booking) => {
+    setBookings(prev => {
+      const idx = prev.findIndex(item => item.id === b.id);
+      if (idx >= 0) {
+        const updated = [...prev];
+        updated[idx] = b;
+        return updated;
+      }
+      return [b, ...prev];
+    });
     if (currentUser) await saveBooking({ ...b, ownerId: currentUser.uid });
   };
   const handleDeleteBooking = async (id: string) => {
+    setBookings(prev => prev.filter(b => b.id !== id));
     await deleteBooking(id);
   };
 
+  const handleSaveInvoice = async (inv: any) => {
+    if (currentUser) await saveInvoice({ ...inv, ownerId: currentUser.uid });
+  };
+
   const handleSaveExpense = async (e: Expense) => {
+    setExpenses(prev => {
+      const idx = prev.findIndex(item => item.id === e.id);
+      if (idx >= 0) {
+        const updated = [...prev];
+        updated[idx] = e;
+        return updated;
+      }
+      return [e, ...prev];
+    });
     if (currentUser) await saveExpense({ ...e, ownerId: currentUser.uid });
   };
   const handleDeleteExpense = async (id: string) => {
+    setExpenses(prev => prev.filter(e => e.id !== id));
     await deleteExpense(id);
   };
 
   const handleSavePayment = async (p: Payment) => {
+    setPayments(prev => {
+      const idx = prev.findIndex(item => item.id === p.id);
+      if (idx >= 0) {
+        const updated = [...prev];
+        updated[idx] = p;
+        return updated;
+      }
+      return [p, ...prev];
+    });
     if (currentUser) await savePayment({ ...p, ownerId: currentUser.uid });
   };
   const handleDeletePayment = async (id: string) => {
+    setPayments(prev => prev.filter(p => p.id !== id));
     await deletePayment(id);
   };
 
   const handleSaveClient = async (c: Client) => {
+    setClients(prev => {
+      const idx = prev.findIndex(item => item.id === c.id);
+      if (idx >= 0) {
+        const updated = [...prev];
+        updated[idx] = c;
+        return updated;
+      }
+      return [c, ...prev];
+    });
     if (currentUser) await saveClient({ ...c, ownerId: currentUser.uid });
   };
   const handleDeleteClient = async (id: string) => {
+    setClients(prev => prev.filter(c => c.id !== id));
     await deleteClient(id);
   };
 
   const handleSaveRateCard = async (rc: RateCard) => {
+    setRateCards(prev => {
+      const idx = prev.findIndex(item => item.id === rc.id);
+      if (idx >= 0) {
+        const updated = [...prev];
+        updated[idx] = rc;
+        return updated;
+      }
+      return [rc, ...prev];
+    });
     if (currentUser) await saveRateCard({ ...rc, ownerId: currentUser.uid });
   };
   const handleDeleteRateCard = async (id: string) => {
+    setRateCards(prev => prev.filter(rc => rc.id !== id));
     await deleteRateCard(id);
   };
 
   const handleSaveTodo = async (t: TodoItem) => {
+    setTodos(prev => {
+      const idx = prev.findIndex(item => item.id === t.id);
+      if (idx >= 0) {
+        const updated = [...prev];
+        updated[idx] = t;
+        return updated;
+      }
+      return [t, ...prev];
+    });
     if (currentUser) await saveTodo({ ...t, ownerId: currentUser.uid });
   };
   const handleDeleteTodo = async (id: string) => {
+    setTodos(prev => prev.filter(t => t.id !== id));
     await deleteTodo(id);
+  };
+
+  const handleSaveTestimonial = async (t: Testimonial) => {
+    setTestimonials(prev => {
+      const idx = prev.findIndex(item => item.id === t.id);
+      if (idx >= 0) {
+        const updated = [...prev];
+        updated[idx] = t;
+        return updated;
+      }
+      return [t, ...prev];
+    });
+    if (currentUser) await saveTestimonial({ ...t, userId: currentUser.uid });
+  };
+  const handleDeleteTestimonial = async (id: string) => {
+    setTestimonials(prev => prev.filter(t => t.id !== id));
+    await deleteTestimonial(id);
   };
 
   const contextValue = {
     setShowWizardModal,
-    bookings, expenses, payments, clients, rateCards, todos,
+    setSelectedRateCard,
+    bookings, expenses, payments, clients, rateCards, todos, testimonials,
     handleSaveBooking, handleDeleteBooking,
     handleSaveExpense, handleDeleteExpense,
     handleSavePayment, handleDeletePayment,
     handleSaveClient, handleDeleteClient,
     handleSaveRateCard, handleDeleteRateCard,
     handleSaveTodo, handleDeleteTodo,
+    handleSaveTestimonial, handleDeleteTestimonial,
+    handleSaveInvoice,
     currentUserId: currentUser.uid,
   };
 
   return (
-    <BrowserRouter>
+    <HashRouter>
+      <ScrollToTop />
       <OutletContext.Provider value={contextValue}>
         <AppLayout>
           <Routes>
@@ -273,6 +379,8 @@ const MainApp: React.FC = () => {
             <Route path="/todo" element={<TodoPageWrapper />} />
             <Route path="/notifications" element={<NotificationPageWrapper />} />
             <Route path="/quick-action" element={<QuickActionSettingsPageWrapper />} />
+            <Route path="/testimonial" element={<TestimonialPageWrapper />} />
+            <Route path="/testimonials" element={<TestimonialPageWrapper />} />
             <Route path="/daymode/:id?" element={<DayModeWrapper />} />
             <Route path="*" element={<Navigate to="/home" replace />} />
           </Routes>
@@ -280,17 +388,23 @@ const MainApp: React.FC = () => {
 
         {showWizardModal && (
           <WizardPage
-            onClose={() => setShowWizardModal(false)}
+            onClose={() => {
+              setShowWizardModal(false);
+              setSelectedRateCard(null);
+            }}
             onSave={async (b) => {
               await handleSaveBooking(b);
-              setShowWizardModal(false);
             }}
+            onSaveClient={handleSaveClient}
+            onSavePayment={handleSavePayment}
             clients={contextValue.clients}
             existingBookings={contextValue.bookings}
+            rateCards={contextValue.rateCards}
+            initialRateCard={selectedRateCard}
           />
         )}
       </OutletContext.Provider>
-    </BrowserRouter>
+    </HashRouter>
   );
 };
 
@@ -336,6 +450,7 @@ const ClientsPageWrapper = () => {
 
 const FinancePageWrapper = () => {
   const ctx = useOutletContext();
+  const navigate = useNavigate();
   return (
     <FinancePage
       bookings={ctx.bookings}
@@ -345,7 +460,9 @@ const FinancePageWrapper = () => {
       onDeleteExpense={ctx.handleDeleteExpense}
       onSavePayment={ctx.handleSavePayment}
       onDeletePayment={ctx.handleDeletePayment}
+      onSaveBooking={ctx.handleSaveBooking}
       currentUserId={ctx.currentUserId}
+      onOpenBookingDetail={(id) => navigate(`/booking/${id}`)}
     />
   );
 };
@@ -376,6 +493,8 @@ const BookingDetailWrapper = () => {
     <BookingDetailPage
       booking={booking}
       clients={ctx.clients}
+      payments={ctx.payments.filter((p: any) => p.bookingId === booking.id)}
+      expenses={ctx.expenses.filter((e: any) => e.bookingId === booking.id)}
       onBack={() => navigate(-1)}
       onEdit={ctx.handleSaveBooking}
       onDelete={async (bookingId: string) => {
@@ -400,7 +519,7 @@ const InvoicePageWrapper = () => {
   const booking = id
     ? ctx.bookings.find((b: Booking) => b.id === id)
     : ctx.bookings[0] || null;
-  return <InvoicePage booking={booking} allBookings={ctx.bookings} payments={ctx.payments} onBack={() => navigate(-1)} />;
+  return <InvoicePage booking={booking} allBookings={ctx.bookings} payments={ctx.payments} onSaveInvoice={ctx.handleSaveInvoice} onBack={() => navigate(-1)} />;
 };
 
 const DayModeWrapper = () => {
@@ -434,6 +553,7 @@ const PriceListPageWrapper = () => {
       onSaveRateCard={ctx.handleSaveRateCard}
       onDeleteRateCard={ctx.handleDeleteRateCard}
       onUseForJob={(card) => {
+        if (ctx.setSelectedRateCard) ctx.setSelectedRateCard(card);
         ctx.setShowWizardModal(true);
       }}
     />
@@ -492,6 +612,19 @@ const NotificationPageWrapper = () => {
 const QuickActionSettingsPageWrapper = () => {
   const navigate = useNavigate();
   return <QuickActionSettingsPage onBack={() => navigate(-1)} />;
+};
+
+const TestimonialPageWrapper = () => {
+  const ctx = useOutletContext();
+  const navigate = useNavigate();
+  return (
+    <TestimonialPage
+      testimonials={ctx.testimonials || []}
+      onSaveTestimonial={ctx.handleSaveTestimonial}
+      onDeleteTestimonial={ctx.handleDeleteTestimonial}
+      onBack={() => navigate(-1)}
+    />
+  );
 };
 
 // ── Root ───────────────────────────────────────────────────────

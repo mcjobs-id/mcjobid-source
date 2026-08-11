@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   Tag, TrendingUp, MessageSquare, CheckSquare, Zap, FileText, Bell, Settings, LogOut, ChevronRight, AlertTriangle, User, BarChart2, ArrowLeft
 } from 'lucide-react';
@@ -68,11 +69,17 @@ const menuItems = [
 ];
 
 export const MorePage: React.FC<MorePageProps> = ({ onNavigateTab }) => {
-  const { userProfile, logout } = useAuth();
+  const { userProfile, currentUser, logout } = useAuth();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
+  const userName = userProfile?.stageName?.trim() || userProfile?.displayName?.trim() || userProfile?.name?.trim() || currentUser?.displayName?.trim() || 'Profil MC';
+  const userPhoto = userProfile?.photoUrl || userProfile?.photoUri || currentUser?.photoURL;
+  const userSubtitle = userProfile?.city?.trim() ? `${userProfile.city} • MC Professional` : (userProfile?.specialization?.trim() || userProfile?.email || 'MC Professional Talent');
+  const initial = userName.charAt(0).toUpperCase();
+
   return (
-    <div className="animate-fade-in" style={{maxWidth:'800px', margin:'0 auto', paddingBottom:'16px', display:'flex', flexDirection:'column', gap:'24px'}}>
+    <div className="animate-fade-in" style={{width:'100%', paddingBottom:'16px', display:'flex', flexDirection:'column', gap:'24px'}}>
+      
       {/* Header */}
       <div>
         <h1 className="page-title">Lainnya & Hub Bisnis MC</h1>
@@ -93,21 +100,27 @@ export const MorePage: React.FC<MorePageProps> = ({ onNavigateTab }) => {
         className="hover-opacity"
       >
         <div style={{display:'flex', alignItems:'center', gap:'14px'}}>
-          <div style={{width:'48px', height:'48px', borderRadius:'50%', background:'rgba(255,255,255,0.2)', border:'2px solid rgba(255,255,255,0.35)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, overflow:'hidden'}}>
-            {userProfile?.photoUrl || userProfile?.photoUri ? (
-              <img src={userProfile.photoUrl || userProfile.photoUri} alt="Profile" style={{width:'100%', height:'100%', objectFit:'cover'}} />
+          <div style={{width:'52px', height:'52px', borderRadius:'50%', background:'rgba(255,255,255,0.2)', border:'2px solid rgba(255,255,255,0.35)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, overflow:'hidden'}}>
+            {userPhoto ? (
+              <img
+                src={userPhoto}
+                alt={userName}
+                style={{width:'100%', height:'100%', objectFit:'cover'}}
+                referrerPolicy="no-referrer"
+                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+              />
             ) : (
-              <span style={{fontSize:'18px', fontWeight:'800', color:'white'}}>
-                {userProfile?.displayName?.charAt(0).toUpperCase() || 'M'}
+              <span style={{fontSize:'20px', fontWeight:'800', color:'white'}}>
+                {initial}
               </span>
             )}
           </div>
           <div>
             <h3 style={{fontSize:'16px', fontWeight:'700', color:'white', letterSpacing:'-0.01em'}}>
-              {userProfile?.displayName || 'MC Professional'}
+              {userName}
             </h3>
-            <p style={{fontSize:'12px', color:'rgba(255,255,255,0.65)', marginTop:'2px'}}>
-              {userProfile?.city || 'Indonesia'} • Professional MC
+            <p style={{fontSize:'12px', color:'rgba(255,255,255,0.75)', marginTop:'2px'}}>
+              {userSubtitle}
             </p>
           </div>
         </div>
@@ -168,8 +181,8 @@ export const MorePage: React.FC<MorePageProps> = ({ onNavigateTab }) => {
         </div>
       </div>
 
-      {/* Logout Modal */}
-      {showLogoutModal && (
+      {/* Logout Modal — rendered via portal to avoid stacking context issues */}
+      {showLogoutModal && createPortal(
         <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setShowLogoutModal(false); }}>
           <div className="modal-panel animate-fade-in" style={{textAlign:'center'}}>
             <div style={{width:'48px', height:'48px', borderRadius:'14px', background:'var(--error-light)', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 16px'}}>
@@ -188,7 +201,8 @@ export const MorePage: React.FC<MorePageProps> = ({ onNavigateTab }) => {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ArrowLeft, CheckSquare, Plus, Trash2, Sparkles, Filter, AlertCircle, Calendar, CheckCircle2, Save } from 'lucide-react';
 import type { TodoItem } from '../types';
 import { useAuth } from '../context/AuthContext';
+import { FAB } from '../components/FAB';
 
 interface TodoPageProps {
   todos: TodoItem[];
@@ -40,16 +41,17 @@ export const TodoPage: React.FC<TodoPageProps> = ({ todos, onSaveTodo, onDeleteT
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !currentUser?.uid) return;
+    if (!title.trim()) return;
+    const uid = currentUser?.uid || 'user_local';
     setSaving(true);
     try {
       const newTodo: TodoItem = {
         id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-        ownerId: currentUser.uid,
-        title,
+        ownerId: uid,
+        title: title.trim(),
         category,
         priority,
-        notes,
+        notes: notes.trim(),
         isCompleted: false,
         createdAt: new Date().toISOString()
       };
@@ -58,7 +60,7 @@ export const TodoPage: React.FC<TodoPageProps> = ({ todos, onSaveTodo, onDeleteT
       setNotes('');
       setViewMode('list');
     } catch (err) {
-      console.error(err);
+      console.error('Failed to save todo:', err);
     } finally {
       setSaving(false);
     }
@@ -213,33 +215,25 @@ export const TodoPage: React.FC<TodoPageProps> = ({ todos, onSaveTodo, onDeleteT
     );
   }
 
+  const todoFabItems = [
+    {
+      key: 'add-task',
+      label: 'Tambah Tugas Baru',
+      icon: Plus,
+      onClick: () => setViewMode('form')
+    },
+    {
+      key: 'load-template',
+      label: 'Muat Template MC 🚀',
+      icon: Sparkles,
+      onClick: handleApplyTemplates
+    }
+  ];
+
   // ── LIST VIEW ──
   return (
-    <div className="animate-fade-in" style={{maxWidth:'850px', margin:'0 auto', paddingBottom:'32px'}}>
+    <div className="animate-fade-in" style={{width:'100%', paddingBottom:'32px'}}>
       
-      {/* ── HEADER ── */}
-      <div className="page-header" style={{alignItems:'center'}}>
-        <div style={{display:'flex', alignItems:'center', gap:'16px'}}>
-          <button onClick={onBack} className="btn btn-ghost" style={{padding:'0 8px', marginLeft:'-8px'}}>
-            <ArrowLeft size={18} />
-          </button>
-          <div>
-            <h1 className="page-title" style={{display:'flex', alignItems:'center', gap:'8px'}}>
-              <CheckSquare size={20} color="#7C3AED" /> Tugas & To-Do MC
-            </h1>
-            <p className="page-subtitle">Checklist persiapan perform, gladi resik, dan operasional karier MC.</p>
-          </div>
-        </div>
-
-        <div style={{display:'flex', gap:'8px', flexWrap:'wrap'}}>
-          <button onClick={handleApplyTemplates} className="btn btn-secondary btn-sm" style={{color:'#7C3AED', borderColor:'#7C3AED'}}>
-            <Sparkles size={14} /> Template MC 🚀
-          </button>
-          <button onClick={() => setViewMode('form')} className="btn btn-primary btn-sm" style={{background:'#7C3AED', borderColor:'#7C3AED'}}>
-            <Plus size={14} /> Tambah Tugas
-          </button>
-        </div>
-      </div>
 
       {/* ── HERO STATS CARD ── */}
       <div className="card" style={{padding:'24px', marginBottom:'24px', borderTop:'4px solid #7C3AED'}}>
@@ -332,12 +326,9 @@ export const TodoPage: React.FC<TodoPageProps> = ({ todos, onSaveTodo, onDeleteT
           <div className="card empty-state" style={{padding:'48px 24px'}}>
             <CheckSquare size={24} className="empty-state-icon" style={{color:'#7C3AED', background:'#F5F3FF'}} />
             <p style={{fontSize:'14px', fontWeight:'600', color:'var(--text-1)'}}>Tidak ada tugas dalam tampilan ini!</p>
-            <p style={{fontSize:'12px', color:'var(--text-3)', maxWidth:'280px', margin:'4px auto 12px'}}>
-              Gunakan tombol Template MC di atas untuk mengisi 8 tugas standar kesiapan perform secara otomatis.
+            <p style={{fontSize:'12px', color:'var(--text-3)', maxWidth:'280px', margin:'4px auto'}}>
+              Gunakan tombol Template MC atau Tambah Tugas di atas untuk mulai mengelola daftar tugas Anda.
             </p>
-            <button onClick={handleApplyTemplates} className="btn btn-secondary btn-sm" style={{color:'#7C3AED'}}>
-              <Sparkles size={14} /> Muat Template MC 🚀
-            </button>
           </div>
         ) : (
           filteredTodos.map(t => (
@@ -398,6 +389,10 @@ export const TodoPage: React.FC<TodoPageProps> = ({ todos, onSaveTodo, onDeleteT
         )}
       </div>
 
+      {/* ── FLOATING SPEED DIAL ACTION BUTTON ── */}
+      {viewMode === 'list' && (
+        <FAB label="Tugas MC" items={todoFabItems} />
+      )}
     </div>
   );
 };

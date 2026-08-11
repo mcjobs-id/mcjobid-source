@@ -8,6 +8,7 @@ interface InvoicePageProps {
   booking: Booking | null;
   allBookings?: Booking[];
   payments?: Payment[];
+  onSaveInvoice?: (inv: any) => Promise<void>;
   onBack: () => void;
 }
 
@@ -17,6 +18,7 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({
   booking: initialBooking,
   allBookings = [],
   payments = [],
+  onSaveInvoice,
   onBack
 }) => {
   const { userProfile } = useAuth();
@@ -66,7 +68,28 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({
   
   const formatRp = (val: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(val);
 
-  const handlePrint = () => {
+  const handlePrint = async () => {
+    if (onSaveInvoice && activeBooking && activeBooking.id !== 'MOCK-123') {
+      try {
+        await onSaveInvoice({
+          id: `INV-${Date.now()}`,
+          ownerId: activeBooking.ownerId,
+          bookingId: activeBooking.id,
+          invoiceNumber,
+          clientName: getBookingClient(activeBooking) || 'Klien',
+          eventName: getBookingName(activeBooking) || 'Event',
+          eventDate: getBookingDate(activeBooking) || '',
+          totalFee,
+          dpAmount: totalPaid,
+          remainingAmount: remaining,
+          dueDate: getBookingDate(activeBooking) || '',
+          createdAt: new Date().toISOString(),
+          template
+        });
+      } catch (err) {
+        console.error('Failed to log invoice history:', err);
+      }
+    }
     window.print();
   };
 
@@ -82,7 +105,7 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({
       `-----------------------------\n` +
       `Rekening Pembayaran:\n` +
       `${userProfile?.bankName || 'BCA'} - ${userProfile?.bankAccountNumber || '1234567890'}\n` +
-      `A.n. ${userProfile?.bankAccountHolder || userProfile?.displayName || 'Nama Rekening'}\n\n` +
+      `A.n. ${userProfile?.bankAccountHolder || userProfile?.stageName || userProfile?.displayName || 'Nama Rekening'}\n\n` +
       `Terima kasih! 🙏`;
 
     navigator.clipboard.writeText(txt);
@@ -124,90 +147,76 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({
   const styles = getTemplateStyles();
 
   return (
-    <div className="animate-fade-in" style={{maxWidth:'950px', margin:'0 auto', paddingBottom:'32px'}}>
+    <div className="animate-fade-in" style={{width:'100%', paddingBottom:'32px'}}>
       
-      {/* ── TOP NAV & ACTIONS ── */}
-      <div className="hide-on-print" style={{display:'flex', flexDirection:'column', gap:'16px', marginBottom:'24px'}}>
-        <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:'12px'}}>
-          <div style={{display:'flex', alignItems:'center', gap:'12px'}}>
-            <button onClick={onBack} className="btn btn-ghost" style={{padding:'0 8px', marginLeft:'-8px'}}>
-              <ArrowLeft size={18} />
-            </button>
-            <div>
-              <h1 className="page-title" style={{display:'flex', alignItems:'center', gap:'8px'}}>
-                <FileText size={20} color="var(--primary)" /> Generator Invoice PDF
-              </h1>
-              <p className="page-subtitle">Buat & cetak dokumen invoice resmi dengan 3 pilihan templat desain.</p>
-            </div>
-          </div>
+      {/* ── CONTROL BAR ── */}
+      <div className="hide-on-print" style={{marginBottom:'16px', display:'flex', flexDirection:'column', gap:'12px'}}>
 
-          <div style={{display:'flex', gap:'8px'}}>
-            <button onClick={handleCopyText} className="btn btn-secondary btn-sm" style={{color: copied ? 'var(--success)' : 'inherit'}}>
-              {copied ? <><CheckCircle2 size={14} /> Teks Tersalin</> : <><Copy size={14} /> Salin Teks WA</>}
+        {/* Row 1: Title + Action Buttons */}
+        <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', gap:'12px', flexWrap:'wrap'}}>
+          <span style={{fontSize:'13px', fontWeight:'800', color:'var(--text-1)', display:'flex', alignItems:'center', gap:'7px'}}>
+            <FileText size={14} color="var(--primary)" /> Generator Invoice
+          </span>
+          <div style={{display:'flex', gap:'8px', flexShrink:0}}>
+            <button onClick={handleCopyText} className="btn btn-secondary btn-sm" style={{color: copied ? 'var(--success)' : undefined}}>
+              {copied ? <><CheckCircle2 size={13} /> Tersalin!</> : <><Copy size={13} /> Salin WA</>}
             </button>
             <button onClick={handlePrint} className="btn btn-primary btn-sm">
-              <Printer size={14} /> Cetak Invoice (A4) 🚀
+              <Printer size={13} /> Cetak A4
             </button>
           </div>
         </div>
 
-        {/* ── JOB SELECTOR & TEMPLATES CONTROL BAR ── */}
-        <div className="card" style={{padding:'16px 20px', display:'flex', flexDirection:'column', gap:'16px', background:'var(--bg-surface-2)'}}>
-          
-          <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(280px, 1fr))', gap:'16px', alignItems:'center'}}>
-            {/* Job Selector */}
-            <div>
-              <label className="input-label" style={{marginBottom:'6px'}}>Pilih Acara / Job Klien:</label>
-              {allBookings.length > 0 ? (
-                <select
-                  value={selectedBookingId}
-                  onChange={e => setSelectedBookingId(e.target.value)}
-                  className="input-field"
-                  style={{fontWeight:'600'}}
-                >
-                  {allBookings.map(b => (
-                    <option key={b.id} value={b.id}>
-                      {getBookingName(b)} — {getBookingClient(b)} ({formatRp(getBookingFee(b))})
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <div style={{fontSize:'12px', color:'var(--text-3)', fontStyle:'italic'}}>
-                  (Menampilkan data sampel penawaran demo. Belum ada job tersimpan.)
-                </div>
-              )}
+        {/* Row 2: Job selector */}
+        <div>
+          <label className="input-label" style={{marginBottom:'5px'}}>Pilih Acara / Job:</label>
+          {allBookings.length > 0 ? (
+            <select
+              value={selectedBookingId}
+              onChange={e => setSelectedBookingId(e.target.value)}
+              className="input-field"
+              style={{fontWeight:'600'}}
+            >
+              {allBookings.map(b => (
+                <option key={b.id} value={b.id}>
+                  {getBookingName(b)} — {getBookingClient(b)} ({formatRp(getBookingFee(b))})
+                </option>
+              ))}
+            </select>
+          ) : (
+            <div style={{fontSize:'12px', color:'var(--text-3)', fontStyle:'italic', padding:'10px', background:'var(--bg-surface-2)', borderRadius:'10px'}}>
+              Belum ada job tersimpan. Menampilkan data demo.
             </div>
-
-            {/* Template Selector Chips */}
-            <div>
-              <label className="input-label" style={{marginBottom:'6px'}}>Pilih Desain Templat Invoice:</label>
-              <div style={{display:'flex', gap:'8px'}}>
-                <button
-                  onClick={() => setTemplate('CORPORATE')}
-                  className={`btn btn-sm ${template === 'CORPORATE' ? 'btn-primary' : 'btn-secondary'}`}
-                  style={{flex:1, justifyContent:'center', fontSize:'12px'}}
-                >
-                  <Building2 size={13} /> Modern Corporate
-                </button>
-                <button
-                  onClick={() => setTemplate('LUXURY')}
-                  className={`btn btn-sm ${template === 'LUXURY' ? 'btn-primary' : 'btn-secondary'}`}
-                  style={{flex:1, justifyContent:'center', fontSize:'12px', background: template === 'LUXURY' ? '#B45309' : undefined, borderColor: template === 'LUXURY' ? '#B45309' : undefined}}
-                >
-                  <Crown size={13} /> Luxury Elegant
-                </button>
-                <button
-                  onClick={() => setTemplate('MINIMALIST')}
-                  className={`btn btn-sm ${template === 'MINIMALIST' ? 'btn-primary' : 'btn-secondary'}`}
-                  style={{flex:1, justifyContent:'center', fontSize:'12px', background: template === 'MINIMALIST' ? '#059669' : undefined, borderColor: template === 'MINIMALIST' ? '#059669' : undefined}}
-                >
-                  <Palette size={13} /> Minimalist Creative
-                </button>
-              </div>
-            </div>
-          </div>
-
+          )}
         </div>
+
+        {/* Row 3: Template chips — wrap, no overflow */}
+        <div>
+          <label className="input-label" style={{marginBottom:'6px'}}>Desain Template:</label>
+          <div style={{display:'flex', gap:'8px', flexWrap:'wrap'}}>
+            <button
+              onClick={() => setTemplate('CORPORATE')}
+              className={`chip${template === 'CORPORATE' ? ' active' : ''}`}
+            >
+              <Building2 size={12} style={{marginRight:'4px'}} /> Modern Corporate
+            </button>
+            <button
+              onClick={() => setTemplate('LUXURY')}
+              className={`chip${template === 'LUXURY' ? ' active' : ''}`}
+              style={template === 'LUXURY' ? {background:'#B45309', borderColor:'#B45309', color:'#fff'} : undefined}
+            >
+              <Crown size={12} style={{marginRight:'4px'}} /> Luxury Elegant
+            </button>
+            <button
+              onClick={() => setTemplate('MINIMALIST')}
+              className={`chip${template === 'MINIMALIST' ? ' active' : ''}`}
+              style={template === 'MINIMALIST' ? {background:'#059669', borderColor:'#059669', color:'#fff'} : undefined}
+            >
+              <Palette size={12} style={{marginRight:'4px'}} /> Minimalist
+            </button>
+          </div>
+        </div>
+
       </div>
 
       {/* ── INVOICE DOCUMENT A4 FORMAT ── */}
@@ -215,7 +224,7 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({
         ref={invoiceRef}
         className="card invoice-document" 
         style={{
-          padding: '44px', 
+          padding: 'clamp(20px, 5vw, 44px)', 
           background: '#FFFFFF',
           color: '#111827',
           fontFamily: styles.fontFamily,
@@ -234,22 +243,22 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({
 
         <div style={{position:'relative', zIndex:1}}>
           {/* Header */}
-          <div style={{display:'flex', justifyContent:'space-between', borderBottom:`2px solid ${styles.borderColor}`, paddingBottom:'24px', marginBottom:'32px'}}>
-            <div>
-              <div style={{width:'44px', height:'44px', borderRadius:'12px', background:styles.primaryColor, display:'flex', alignItems:'center', justifyContent:'center', marginBottom:'12px'}}>
+          <div className="invoice-header" style={{display:'flex', justifyContent:'space-between', flexWrap:'wrap', gap:'16px', borderBottom:`2px solid ${styles.borderColor}`, paddingBottom:'24px', marginBottom:'28px'}}>
+            <div style={{flex:'1', minWidth:'160px'}}>
+              <div style={{width:'44px', height:'44px', borderRadius:'12px', background:styles.primaryColor, display:'flex', alignItems:'center', justifyContent:'center', marginBottom:'10px'}}>
                 <span style={{fontSize:'16px', fontWeight:'800', color:'white'}}>MC</span>
               </div>
-              <h2 style={{fontSize:'22px', fontWeight:'800', color:'#111827', letterSpacing:'-0.02em'}}>{userProfile?.displayName || userProfile?.stageName || 'MC Professional'}</h2>
-              <p style={{fontSize:'13px', color:'#6B7280', marginTop:'2px'}}>{userProfile?.city || 'Indonesia'} • Professional Master of Ceremonies</p>
-              {userProfile?.phoneNumber && <p style={{fontSize:'12px', color:'#6B7280'}}>Telp/WA: {userProfile.phoneNumber}</p>}
+              <h2 style={{fontSize:'clamp(16px,4vw,22px)', fontWeight:'800', color:'#111827', letterSpacing:'-0.02em'}}>{userProfile?.stageName || userProfile?.displayName || 'MC Professional'}</h2>
+              <p style={{fontSize:'12px', color:'#6B7280', marginTop:'2px'}}>{userProfile?.city || 'Indonesia'} • Professional Master of Ceremonies</p>
+              {userProfile?.phoneNumber && <p style={{fontSize:'11px', color:'#6B7280'}}>Telp/WA: {userProfile.phoneNumber}</p>}
             </div>
             
-            <div style={{textAlign:'right'}}>
-              <h1 style={{fontSize:'32px', fontWeight:'900', color:styles.primaryColor, letterSpacing:'-0.02em', marginBottom:'4px'}}>INVOICE</h1>
-              <p style={{fontSize:'13px', fontWeight:'700', color:'#374151'}}>No: {invoiceNumber}</p>
-              <p style={{fontSize:'12px', color:'#6B7280'}}>Tanggal Penerbitan: {formattedDate}</p>
+            <div style={{textAlign:'right', flexShrink:0}}>
+              <h1 style={{fontSize:'clamp(24px,6vw,32px)', fontWeight:'900', color:styles.primaryColor, letterSpacing:'-0.02em', marginBottom:'4px'}}>INVOICE</h1>
+              <p style={{fontSize:'12px', fontWeight:'700', color:'#374151'}}>No: {invoiceNumber}</p>
+              <p style={{fontSize:'11px', color:'#6B7280'}}>Tanggal Penerbitan: {formattedDate}</p>
               <div style={{marginTop:'8px'}}>
-                <span style={{fontSize:'11px', fontWeight:'700', background: isPaid ? '#D1FAE5' : styles.badgeBg, color: isPaid ? '#065F46' : styles.primaryColor, padding:'4px 10px', borderRadius:'9999px', textTransform:'uppercase'}}>
+                <span style={{fontSize:'10px', fontWeight:'700', background: isPaid ? '#D1FAE5' : styles.badgeBg, color: isPaid ? '#065F46' : styles.primaryColor, padding:'4px 10px', borderRadius:'9999px', textTransform:'uppercase', whiteSpace:'nowrap'}}>
                   {isPaid ? 'STATUS: LUNAS' : (totalPaid > 0 ? 'STATUS: DP (SEBAGIAN)' : 'STATUS: BELUM DIBAYAR')}
                 </span>
               </div>
@@ -257,7 +266,7 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({
           </div>
 
           {/* Info Billing & Event */}
-          <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'32px', marginBottom:'40px', background:styles.bgColor, padding:'20px', borderRadius:'12px', border:`1px solid ${styles.borderColor}`}}>
+          <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(140px, 1fr))', gap:'16px', marginBottom:'32px', background:styles.bgColor, padding:'16px', borderRadius:'12px', border:`1px solid ${styles.borderColor}`}}>
             <div>
               <p style={{fontSize:'11px', fontWeight:'800', color:styles.primaryColor, textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:'6px'}}>DITAGIHKAN KEPADA:</p>
               <h3 style={{fontSize:'16px', fontWeight:'800', color:'#111827', marginBottom:'4px'}}>{getBookingClient(activeBooking) || 'Klien MC'}</h3>
@@ -295,8 +304,8 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({
           </table>
 
           {/* Totals */}
-          <div style={{display:'flex', justifyContent:'flex-end', marginBottom:'48px'}}>
-            <div style={{width:'320px'}}>
+          <div style={{display:'flex', justifyContent:'flex-end', marginBottom:'40px'}}>
+            <div style={{width:'min(320px, 100%)'}}>
               <div style={{display:'flex', justifyContent:'space-between', padding:'8px 0', borderBottom:'1px solid #E4E7EC'}}>
                 <span style={{fontSize:'13px', color:'#4B5563'}}>Subtotal Total Honor</span>
                 <span style={{fontSize:'13px', fontWeight:'600', color:'#111827', fontVariantNumeric:'tabular-nums'}}>{formatRp(totalFee)}</span>
@@ -315,7 +324,7 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({
           </div>
 
           {/* Footer Notes */}
-          <div style={{borderTop:`2px solid ${styles.borderColor}`, paddingTop:'24px', display:'flex', justifyContent:'space-between', alignItems:'flex-end'}}>
+          <div style={{borderTop:`2px solid ${styles.borderColor}`, paddingTop:'20px', display:'flex', justifyContent:'space-between', alignItems:'flex-end', flexWrap:'wrap', gap:'16px'}}>
             <div>
               <p style={{fontSize:'11px', fontWeight:'800', color:styles.primaryColor, textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:'6px'}}>REKENING PEMBAYARAN:</p>
               <p style={{fontSize:'14px', color:'#111827', fontWeight:'800'}}>{userProfile?.bankName || 'BCA'} - {userProfile?.bankAccountNumber || '1234567890'}</p>

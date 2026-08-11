@@ -117,23 +117,41 @@ const normalizeBooking = (raw: any): Booking => {
 const normalizeRateCard = (raw: any): RateCard => {
   const name = raw.name || raw.title || 'Paket MC';
   const title = raw.title || name;
-  const features = Array.isArray(raw.features) ? raw.features : (Array.isArray(raw.inclusions) ? raw.inclusions : []);
-  const inclusions = Array.isArray(raw.inclusions) ? raw.inclusions : features;
+
+  const features = Array.isArray(raw.features) && raw.features.length > 0
+    ? raw.features
+    : (Array.isArray(raw.inclusions) ? raw.inclusions : []);
+  const inclusions = Array.isArray(raw.inclusions) && raw.inclusions.length > 0
+    ? raw.inclusions
+    : features;
+
+  const addOns = Array.isArray(raw.addOns)
+    ? raw.addOns
+    : (Array.isArray(raw.addons) ? raw.addons : []);
+
   const notes = raw.notes || raw.description || '';
   const description = raw.description || notes;
+  const terms = raw.terms || raw.termsAndConditions || '';
+
+  const durationHours = Number(raw.durationHours || parseFloat(raw.duration) || 3);
+  const duration = raw.duration || `${durationHours} Jam`;
 
   return {
     ...raw,
     id: raw.id,
-    ownerId: raw.ownerId, // removed fallback to ''
+    ownerId: raw.ownerId,
     name,
     title,
     price: Number(raw.price || 0),
+    durationHours,
+    duration,
     features,
     inclusions,
+    addOns,
+    terms,
     notes,
     description,
-    category: raw.category || 'General'
+    category: raw.category || 'Wedding'
   };
 };
 
@@ -146,31 +164,116 @@ export const getUserProfile = async (uid: string): Promise<UserProfile | null> =
   const snap = await getDoc(docRef);
   if (snap.exists()) {
     const data = snap.data();
+    const displayName = data.displayName || data.name || 'MC Professional';
+    const name = displayName;
+    const phone = data.phone || data.phoneNumber || '';
+    const phoneNumber = phone;
+    const bankAccountNumber = data.bankAccountNumber || data.bankAccount || data.accountNumber || '';
+    const bankAccount = bankAccountNumber;
+    const bankAccountHolder = data.bankAccountHolder || data.bankHolder || data.accountName || '';
+    const bankHolder = bankAccountHolder;
+    const instagramHandle = data.instagramHandle || data.instagram || '';
+    const instagram = instagramHandle;
+    const photoUrl = data.photoUrl || data.photoUri || '';
+    const photoUri = photoUrl;
+
     return {
       uid,
       ...data,
-      displayName: data.displayName || data.name || 'MC Professional',
-      name: data.name || data.displayName || 'MC Professional',
-      profileCompleted: data.profileCompleted ?? false
+      displayName,
+      name,
+      phone,
+      phoneNumber,
+      bankAccountNumber,
+      bankAccount,
+      bankAccountHolder,
+      bankHolder,
+      instagramHandle,
+      instagram,
+      photoUrl,
+      photoUri,
+      baseFee: Number(data.baseFee || 0),
+      defaultDpPercentage: Number(data.defaultDpPercentage || 30),
+      profileCompleted: data.profileCompleted ?? !!(displayName && phone && data.city && bankAccountNumber)
     } as UserProfile;
   }
   return null;
 };
 
+export const subscribeUserProfile = (uid: string, callback: (profile: UserProfile | null) => void) => {
+  const docRef = doc(db, 'users', uid);
+  return onSnapshot(docRef, (snap) => {
+    if (snap.exists()) {
+      const data = snap.data();
+      const displayName = data.displayName || data.name || 'MC Professional';
+      const name = displayName;
+      const phone = data.phone || data.phoneNumber || '';
+      const phoneNumber = phone;
+      const bankAccountNumber = data.bankAccountNumber || data.bankAccount || data.accountNumber || '';
+      const bankAccount = bankAccountNumber;
+      const bankAccountHolder = data.bankAccountHolder || data.bankHolder || data.accountName || '';
+      const bankHolder = bankAccountHolder;
+      const instagramHandle = data.instagramHandle || data.instagram || '';
+      const instagram = instagramHandle;
+      const photoUrl = data.photoUrl || data.photoUri || '';
+      const photoUri = photoUrl;
+
+      callback({
+        uid,
+        ...data,
+        displayName,
+        name,
+        phone,
+        phoneNumber,
+        bankAccountNumber,
+        bankAccount,
+        bankAccountHolder,
+        bankHolder,
+        instagramHandle,
+        instagram,
+        photoUrl,
+        photoUri,
+        baseFee: Number(data.baseFee || 0),
+        defaultDpPercentage: Number(data.defaultDpPercentage || 30),
+        profileCompleted: data.profileCompleted ?? !!(displayName && phone && data.city && bankAccountNumber)
+      } as UserProfile);
+    } else {
+      callback(null);
+    }
+  }, (err) => {
+    console.error('Error subscribing to user profile:', err);
+    callback(null);
+  });
+};
+
 export const saveUserProfile = async (profile: UserProfile): Promise<void> => {
   const docRef = doc(db, 'users', profile.uid);
   const data: any = { ...profile };
-  // Ensure both aliases are saved
-  data.displayName = profile.displayName || profile.name || 'MC Professional';
-  data.name = data.displayName;
-  data.phoneNumber = profile.phoneNumber || profile.phone;
-  data.phone = data.phoneNumber;
-  data.bankAccountNumber = profile.bankAccountNumber || profile.bankAccount;
-  data.bankAccount = data.bankAccountNumber;
-  data.bankAccountHolder = profile.bankAccountHolder || profile.bankHolder;
-  data.bankHolder = data.bankAccountHolder;
-  data.instagramHandle = profile.instagramHandle || profile.instagram;
-  data.instagram = data.instagramHandle;
+
+  const displayName = profile.displayName || profile.name || 'MC Professional';
+  data.displayName = displayName;
+  data.name = displayName;
+
+  const phone = profile.phoneNumber || profile.phone || '';
+  data.phoneNumber = phone;
+  data.phone = phone;
+
+  const bankAccountNumber = profile.bankAccountNumber || profile.bankAccount || '';
+  data.bankAccountNumber = bankAccountNumber;
+  data.bankAccount = bankAccountNumber;
+
+  const bankAccountHolder = profile.bankAccountHolder || profile.bankHolder || '';
+  data.bankAccountHolder = bankAccountHolder;
+  data.bankHolder = bankAccountHolder;
+
+  const instagramHandle = profile.instagramHandle || profile.instagram || '';
+  data.instagramHandle = instagramHandle;
+  data.instagram = instagramHandle;
+
+  const photoUrl = profile.photoUrl || profile.photoUri || '';
+  data.photoUrl = photoUrl;
+  data.photoUri = photoUrl;
+
   data.updatedAt = new Date().toISOString();
   await setDoc(docRef, data, { merge: true });
 };
@@ -549,17 +652,20 @@ export const deleteChecklistItem = async (itemId: string): Promise<void> => {
 // Testimonials
 // ─────────────────────────────────────────────────────────────
 
-export const subscribeTestimonials = (userId: string, callback: (testimonials: Testimonial[]) => void) => {
-  const q = query(
-    collection(db, 'testimonials'),
-    where('userId', '==', userId)
-  );
+export const subscribeTestimonials = (currentUserId: string, callback: (testimonials: Testimonial[]) => void) => {
+  const q = collection(db, 'testimonials');
   return onSnapshot(q, (snapshot) => {
     const list: Testimonial[] = [];
     snapshot.forEach((docSnap) => {
       list.push({ id: docSnap.id, ...docSnap.data() } as Testimonial);
     });
-    list.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    list.sort((a, b) => {
+      if (a.userId === currentUserId && b.userId !== currentUserId) return -1;
+      if (a.userId !== currentUserId && b.userId === currentUserId) return 1;
+      const timeA = new Date(a.createdAt || a.date || 0).getTime();
+      const timeB = new Date(b.createdAt || b.date || 0).getTime();
+      return timeB - timeA;
+    });
     callback(list);
   }, (err) => {
     console.error('Error subscribing to testimonials:', err);
@@ -598,9 +704,11 @@ export const subscribeTodos = (ownerId: string, callback: (todos: TodoItem[]) =>
         id: docSnap.id,
         ownerId: data.ownerId || ownerId,
         title: data.title || data.text || 'Tugas Baru',
+        category: data.category || 'PERSIAPAN',
+        priority: data.priority || 'SEDANG',
+        notes: data.notes || data.note || '',
         isCompleted: data.isCompleted ?? data.completed ?? false,
         dueDate: data.dueDate,
-        priority: data.priority,
         createdAt: data.createdAt || new Date().toISOString()
       });
     });

@@ -1,17 +1,22 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
   ArrowLeft, Save, Calendar, User, DollarSign, MapPin,
   AlignLeft, CheckCircle2, Clock, Mic, Phone, Tag,
   Users, ChevronLeft, ChevronRight, X, AlertTriangle, ExternalLink, Sparkles, Building2, Globe, Shirt, Palette
 } from 'lucide-react';
-import type { Booking, Client } from '../types';
+import type { Booking, Client, Payment, RateCard } from '../types';
 import { useAuth } from '../context/AuthContext';
 
 interface WizardPageProps {
   onClose: () => void;
   onSave: (booking: Booking) => Promise<void>;
+  onSaveClient?: (client: Client) => Promise<void>;
+  onSavePayment?: (payment: Payment) => Promise<void>;
   clients?: Client[];
   existingBookings?: Booking[];
+  rateCards?: RateCard[];
+  initialRateCard?: RateCard | null;
 }
 
 const CATEGORY_PRESETS = ['Wedding', 'Corporate', 'Birthday', 'Seminar', 'Concert', 'Gathering'];
@@ -34,10 +39,14 @@ function formatRp(val: number) {
 export const WizardPage: React.FC<WizardPageProps> = ({
   onClose,
   onSave,
+  onSaveClient,
+  onSavePayment,
   clients = [],
-  existingBookings = []
+  existingBookings = [],
+  rateCards = [],
+  initialRateCard
 }) => {
-  const { currentUser } = useAuth();
+  const { currentUser, userProfile } = useAuth();
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -75,11 +84,44 @@ export const WizardPage: React.FC<WizardPageProps> = ({
   const [specialRequest, setSpecialRequest] = useState('');
 
   // Section 4 — Keuangan & Honor MC
-  const [fee, setFee] = useState<number | ''>('');
-  const [dp, setDp] = useState<number | ''>('');
+  const [fee, setFee] = useState<number | ''>(userProfile?.baseFee || '');
+  const [dp, setDp] = useState<number | ''>(() => {
+    if (userProfile?.baseFee && userProfile?.defaultDpPercentage) {
+      return Math.round((userProfile.baseFee * userProfile.defaultDpPercentage) / 100);
+    }
+    return '';
+  });
 
   // Section 5 — Catatan Brief
-  const [note, setNote] = useState('');
+  const [note, setNote] = useState(userProfile?.termsAndConditions || '');
+
+  // Pre-fill asynchronously loaded user profile defaults
+  useEffect(() => {
+    if (userProfile) {
+      if (fee === '' && userProfile.baseFee) {
+        setFee(userProfile.baseFee);
+        if (userProfile.defaultDpPercentage) {
+          setDp(Math.round((userProfile.baseFee * userProfile.defaultDpPercentage) / 100));
+        }
+      }
+      if (!note && userProfile.termsAndConditions) {
+        setNote(userProfile.termsAndConditions);
+      }
+    }
+  }, [userProfile]);
+
+  // Pre-fill initial rate card if provided
+  useEffect(() => {
+    if (initialRateCard) {
+      if (initialRateCard.category) setCategory(initialRateCard.category);
+      if (initialRateCard.price) {
+        setFee(initialRateCard.price);
+        if (userProfile?.defaultDpPercentage) {
+          setDp(Math.round((initialRateCard.price * userProfile.defaultDpPercentage) / 100));
+        }
+      }
+    }
+  }, [initialRateCard]);
 
   const TOTAL_STEPS = 5;
   const steps = [
@@ -113,7 +155,7 @@ export const WizardPage: React.FC<WizardPageProps> = ({
 
   const validateCurrentStep = (): string => {
     if (step === 1) {
-      if (!eventName.trim() && !clientInput.trim()) return 'Nama Acara atau Klien wajib diisi.';
+      if (!eventName.trim()) return 'Nama Acara / Event wajib diisi.';
       if (!date) return 'Tanggal Acara wajib diisi.';
       if (!startTime || !endTime) return 'Jam Mulai dan Jam Selesai wajib diisi.';
       if (endTime <= startTime) return 'Waktu Selesai harus lebih dari Waktu Mulai.';
@@ -122,7 +164,8 @@ export const WizardPage: React.FC<WizardPageProps> = ({
       if (!clientInput.trim()) return 'Nama Klien / Penyelenggara wajib diisi.';
     }
     if (step === 4) {
-      if (!fee || feeVal <= 0) return 'Total Honor MC wajib diisi.';
+      if (fee === '') return 'Total Honor MC wajib diisi.';
+      if (feeVal < 0) return 'Total Honor MC tidak boleh kurang dari Rp 0.';
       if (dpVal > feeVal) return 'DP tidak boleh melebihi Total Honor.';
     }
     return '';
@@ -173,14 +216,35 @@ export const WizardPage: React.FC<WizardPageProps> = ({
     try {
       const finalCategory = category === 'Lainnya' && customCategory ? customCategory : category;
 
+      // Resolve or auto-create client before constructing booking to get correct clientId
+      let resolvedClientId: string | undefined = clientId || undefined;
+      if (clientInput.trim()) {
+        const existingClient = clients.find(c => (clientId && c.id === clientId) || c.name.toLowerCase() === clientInput.trim().toLowerCase());
+        if (existingClient) {
+          resolvedClientId = existingClient.id;
+        } else if (onSaveClient) {
+          const newClient: Client = {
+            id: `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+            ownerId: currentUser?.uid || '',
+            name: clientInput.trim(),
+            phone: clientPhone,
+            company: clientCompany,
+            pic: pic,
+            createdAt: new Date().toISOString()
+          };
+          await onSaveClient(newClient);
+          resolvedClientId = newClient.id;
+        }
+      }
+
       const booking: Booking = {
         id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
         ownerId: currentUser?.uid || '',
-        name: eventName || clientInput,
-        eventTitle: eventName || clientInput,
-        client: clientInput,
-        clientName: clientInput,
-        clientId: clientId || undefined,
+        name: eventName.trim() || clientInput.trim(),
+        eventTitle: eventName.trim() || clientInput.trim(),
+        client: clientInput.trim(),
+        clientName: clientInput.trim(),
+        clientId: resolvedClientId,
         category: finalCategory,
         status: 'confirmed',
         date,
@@ -188,9 +252,9 @@ export const WizardPage: React.FC<WizardPageProps> = ({
         start: startTime,
         eventTime: startTime,
         end: endTime,
-        location,
-        venue: location,
-        address,
+        location: location.trim(),
+        venue: location.trim(),
+        address: address.trim(),
         mcType,
         language,
         dresscode,
@@ -207,6 +271,23 @@ export const WizardPage: React.FC<WizardPageProps> = ({
       };
 
       await onSave(booking);
+
+      // Auto-create Payment record for DP to sync with Cashflow/Finance
+      if (dpVal > 0 && onSavePayment) {
+        const payment: Payment = {
+          id: `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          ownerId: currentUser?.uid || '',
+          bookingId: booking.id,
+          amount: dpVal,
+          paymentDate: date,
+          date: date,
+          paymentMethod: 'Transfer Bank',
+          note: 'DP Awal (Catat Job)',
+          createdAt: new Date().toISOString()
+        };
+        await onSavePayment(payment);
+      }
+
       setSavedBooking(booking);
       setShowSuccessModal(true);
     } catch (err) {
@@ -217,17 +298,25 @@ export const WizardPage: React.FC<WizardPageProps> = ({
     }
   };
 
-  // Google Calendar Link Builder
+  // Google Calendar Link Builder with robust time & date formatting
   const getGoogleCalendarUrl = (b: Booking) => {
-    const titleEnc = encodeURIComponent(`🎤 MC Perform: ${b.name}`);
-    const dateFormatted = b.eventDate.replace(/-/g, '');
-    const startTimeClean = (b.start || '19:00').replace(':', '') + '00';
-    const endTimeClean = (b.end || '22:00').replace(':', '') + '00';
-    
+    const titleEnc = encodeURIComponent(`🎤 MC Perform: ${b.name || b.eventTitle || 'Acara MC'}`);
+    const dateFormatted = (b.eventDate || b.date || '').replace(/-/g, '');
+
+    const padTime = (t: string, fallback: string) => {
+      const parts = (t || fallback).split(':');
+      const hh = (parts[0] || '00').padStart(2, '0');
+      const mm = (parts[1] || '00').padStart(2, '0');
+      return `${hh}${mm}00`;
+    };
+
+    const startTimeClean = padTime(b.start || b.eventTime || '', '19:00');
+    const endTimeClean = padTime(b.end || '', '22:00');
+
     const datesParam = `${dateFormatted}T${startTimeClean}/${dateFormatted}T${endTimeClean}`;
-    const locationEnc = encodeURIComponent(`${b.venue || ''} ${b.address || ''}`.trim());
-    
-    const details = `MC Perform: ${b.name}\nKlien: ${b.clientName}\nHonor: ${formatRp(b.fee || 0)}\nDresscode: ${b.dresscode || '-'}\nPIC: ${b.pic || '-'}\nCatatan: ${b.notes || '-'}`;
+    const locationEnc = encodeURIComponent(`${b.venue || b.location || ''} ${b.address || ''}`.trim());
+
+    const details = `MC Perform: ${b.name}\nKlien: ${b.clientName || b.client}\nHonor: ${formatRp(b.fee || 0)}\nDresscode: ${b.dresscode || '-'}\nPIC: ${b.pic || '-'}\nCatatan: ${b.notes || b.note || '-'}`;
     const detailsEnc = encodeURIComponent(details);
 
     return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${titleEnc}&dates=${datesParam}&details=${detailsEnc}&location=${locationEnc}`;
@@ -244,8 +333,8 @@ export const WizardPage: React.FC<WizardPageProps> = ({
         </button>
 
         <div style={{ textAlign: 'center' }}>
-          <h1 style={{ fontSize: '15px', fontWeight: '800', color: 'var(--text-1)', lineHeight: '1.2' }}>Catat Job Baru 🚀</h1>
-          <p style={{ fontSize: '11px', color: 'var(--text-3)' }}>Seksi {step} dari {TOTAL_STEPS}</p>
+          <h1 style={{ fontSize: '15px', fontWeight: '800', color: 'var(--text-1)', lineHeight: '1.2' }}>Buat Job Baru</h1>
+          <p style={{ fontSize: '11px', color: 'var(--text-3)' }}>Langkah {step} dari {TOTAL_STEPS}</p>
         </div>
 
         <button 
@@ -254,7 +343,7 @@ export const WizardPage: React.FC<WizardPageProps> = ({
           className="btn btn-primary btn-sm"
           style={{ gap: '6px' }}
         >
-          <Save size={14} /> {saving ? 'Simpan...' : 'Simpan'}
+          <Save size={14} /> {saving ? 'Menyimpan...' : 'Simpan'}
         </button>
       </div>
 
@@ -303,14 +392,14 @@ export const WizardPage: React.FC<WizardPageProps> = ({
                     <Calendar size={18} color="var(--primary)" />
                   </div>
                   <div>
-                    <h2 style={{ fontSize: '16px', fontWeight: '800', color: 'var(--text-1)' }}>SEKSI 1: INFORMASI ACARA</h2>
-                    <p style={{ fontSize: '12px', color: 'var(--text-3)' }}>Nama event, jadwal perform, dan alamat lokasi venue.</p>
+                    <h2 style={{ fontSize: '16px', fontWeight: '800', color: 'var(--text-1)' }}>Informasi Acara</h2>
+                    <p style={{ fontSize: '12px', color: 'var(--text-3)' }}>Nama acara, jadwal perform, dan lokasi venue.</p>
                   </div>
                 </div>
 
                 {/* Nama Acara */}
                 <div>
-                  <label className="input-label">Nama Acara / Event *</label>
+                  <label className="input-label">Nama Acara *</label>
                   <input
                     type="text" autoFocus required
                     value={eventName}
@@ -340,11 +429,13 @@ export const WizardPage: React.FC<WizardPageProps> = ({
                       <button
                         key={cat} type="button"
                         onClick={() => { setCategory(cat); setCustomCategory(''); }}
-                        className={`badge ${category === cat ? 'badge-primary' : 'badge-neutral'}`}
+                        className="badge"
                         style={{
-                          cursor: 'pointer', padding: '8px 14px', fontSize: '12px', borderRadius: '9999px',
-                          border: category === cat ? 'none' : '1px solid var(--border)',
-                          background: category === cat ? 'var(--primary)' : 'var(--bg-surface)'
+                          cursor: 'pointer', padding: '8px 14px', fontSize: '12px', fontWeight: '700', borderRadius: '9999px',
+                          border: category === cat ? '1px solid var(--primary)' : '1px solid var(--border)',
+                          background: category === cat ? 'var(--primary)' : 'var(--bg-surface-2)',
+                          color: category === cat ? '#FFFFFF' : 'var(--text-2)',
+                          transition: 'all 0.15s'
                         }}
                       >
                         {cat}
@@ -353,8 +444,14 @@ export const WizardPage: React.FC<WizardPageProps> = ({
                     <button
                       type="button"
                       onClick={() => setCategory('Lainnya')}
-                      className={`badge ${category === 'Lainnya' ? 'badge-primary' : 'badge-neutral'}`}
-                      style={{ cursor: 'pointer', padding: '8px 14px', fontSize: '12px', borderRadius: '9999px' }}
+                      className="badge"
+                      style={{
+                        cursor: 'pointer', padding: '8px 14px', fontSize: '12px', fontWeight: '700', borderRadius: '9999px',
+                        border: category === 'Lainnya' ? '1px solid var(--primary)' : '1px solid var(--border)',
+                        background: category === 'Lainnya' ? 'var(--primary)' : 'var(--bg-surface-2)',
+                        color: category === 'Lainnya' ? '#FFFFFF' : 'var(--text-2)',
+                        transition: 'all 0.15s'
+                      }}
                     >
                       + Kustom / Lainnya
                     </button>
@@ -659,6 +756,31 @@ export const WizardPage: React.FC<WizardPageProps> = ({
                   </div>
                 </div>
 
+                {rateCards.length > 0 && (
+                  <div style={{ marginBottom: '4px' }}>
+                    <label className="input-label">Pilih Paket MC / Rate Card (Opsional)</label>
+                    <select 
+                      className="input-field"
+                      onChange={e => {
+                        const selectedId = e.target.value;
+                        if (!selectedId) return;
+                        const selectedPackage = rateCards.find(rc => rc.id === selectedId);
+                        if (selectedPackage) {
+                          setFee(selectedPackage.price);
+                          if (userProfile?.defaultDpPercentage) {
+                            setDp(Math.round((selectedPackage.price * userProfile.defaultDpPercentage) / 100));
+                          }
+                        }
+                      }}
+                    >
+                      <option value="">-- Input Manual --</option>
+                      {rateCards.map(rc => (
+                        <option key={rc.id} value={rc.id}>{rc.name} - {formatRp(rc.price)}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                   <div>
                     <label className="input-label">Total Honor MC (Rp) *</label>
@@ -763,7 +885,7 @@ export const WizardPage: React.FC<WizardPageProps> = ({
                 </button>
               ) : (
                 <button type="submit" disabled={saving} className="btn btn-primary btn-full btn-lg" style={{ gap: '6px', background: '#059669', borderColor: '#059669' }}>
-                  <Save size={16} /> {saving ? 'Menyimpan Job...' : 'Simpan Job Baru 🚀'}
+                  <Save size={16} /> {saving ? 'Menyimpan Job...' : 'Simpan Job'}
                 </button>
               )}
             </div>
@@ -773,15 +895,15 @@ export const WizardPage: React.FC<WizardPageProps> = ({
         </div>
       </div>
 
-      {/* ── CONFLICT DIALOG MODAL (Android Schedule Conflict Guard) ── */}
-      {showConflictDialog && (
+      {/* ── CONFLICT DIALOG MODAL ── */}
+      {showConflictDialog && createPortal(
         <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setShowConflictDialog(false); }}>
           <div className="modal-panel animate-fade-in" style={{ maxWidth: '480px' }}>
             <div style={{ textAlign: 'center', marginBottom: '16px' }}>
               <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: '#FEF3C7', color: '#D97706', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
                 <AlertTriangle size={28} />
               </div>
-              <h3 style={{ fontSize: '18px', fontWeight: '800', color: 'var(--text-1)' }}>Peringatan Jadwal Bentrok!</h3>
+              <h3 style={{ fontSize: '18px', fontWeight: '800', color: 'var(--text-1)' }}>Jadwal Bentrok</h3>
               <p style={{ fontSize: '13px', color: 'var(--text-3)', marginTop: '4px' }}>
                 Terdapat acara lain pada tanggal <strong>{date}</strong> di jam yang sama:
               </p>
@@ -801,22 +923,23 @@ export const WizardPage: React.FC<WizardPageProps> = ({
                 Ubah Jadwal
               </button>
               <button onClick={() => { setShowConflictDialog(false); executeSave(true); }} className="btn btn-primary btn-full" style={{ background: '#D97706', borderColor: '#D97706' }}>
-                Tetap Simpan 🚀
+                Tetap Simpan
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {/* ── SUCCESS & GOOGLE CALENDAR MODAL (Android Workflow) ── */}
-      {showSuccessModal && savedBooking && (
+      {/* ── SUCCESS & GOOGLE CALENDAR MODAL ── */}
+      {showSuccessModal && savedBooking && createPortal(
         <div className="modal-overlay">
           <div className="modal-panel animate-fade-in" style={{ maxWidth: '440px', textAlign: 'center' }}>
             <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: '#D1FAE5', color: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
               <CheckCircle2 size={32} />
             </div>
 
-            <h3 style={{ fontSize: '20px', fontWeight: '900', color: 'var(--text-1)' }}>Job Berhasil Disimpan! 🎉</h3>
+            <h3 style={{ fontSize: '20px', fontWeight: '900', color: 'var(--text-1)' }}>Job Berhasil Disimpan</h3>
             <p style={{ fontSize: '13px', color: 'var(--text-3)', marginTop: '4px', marginBottom: '20px' }}>
               Acara <strong>{savedBooking.name}</strong> telah tersimpan di agenda & laporan keuangan Anda.
             </p>
@@ -828,15 +951,16 @@ export const WizardPage: React.FC<WizardPageProps> = ({
                 className="btn btn-primary btn-full btn-lg"
                 style={{ background: '#4F46E5', borderColor: '#4F46E5', gap: '8px', textDecoration: 'none' }}
               >
-                <Calendar size={18} /> Simpan ke Google Calendar 📅
+                <Calendar size={18} /> Tambah ke Google Calendar
               </a>
 
               <button onClick={onClose} className="btn btn-secondary btn-full btn-lg">
-                Selesai & Ke Dashboard
+                Selesai
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
     </div>

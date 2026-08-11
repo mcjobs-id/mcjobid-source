@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Lock, Mail, Eye, EyeOff, ShieldCheck, RefreshCw, X, Mic, Calendar, DollarSign, BarChart2, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, updateProfile } from 'firebase/auth';
 import { auth } from '../firebase/config';
 
 // Friendly Indonesian Auth Errors Mapper
@@ -28,6 +28,7 @@ function getIndonesianAuthErrorMessage(error: any): string {
 }
 
 export const LoginPage: React.FC = () => {
+  const [nameState, setNameState] = useState('');
   const [emailState, setEmailState] = useState('');
   const [passwordState, setPasswordState] = useState('');
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
@@ -50,11 +51,14 @@ export const LoginPage: React.FC = () => {
   const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
+    if (!nameState.trim()) { setErrorMsg('Nama / Stage Name wajib diisi.'); return; }
     if (!emailState.trim()) { setErrorMsg('Email pembayaran wajib diisi.'); return; }
     if (!isPasswordValid) { setErrorMsg('Password harus mengisikan huruf kapital, huruf kecil, dan angka (min 6 karakter).'); return; }
     setLoading(true);
     try {
-      await createUserWithEmailAndPassword(auth, emailState, passwordState);
+      const cred = await createUserWithEmailAndPassword(auth, emailState, passwordState);
+      // Save name to Firebase Auth so AuthContext uses it for profile creation
+      await updateProfile(cred.user, { displayName: nameState.trim() });
     } catch (err: any) {
       setErrorMsg(getIndonesianAuthErrorMessage(err));
     } finally { setLoading(false); }
@@ -202,6 +206,26 @@ export const LoginPage: React.FC = () => {
 
             {/* Registration Form */}
             <form onSubmit={handleRegisterSubmit} style={{display:'flex', flexDirection:'column', gap:'16px'}}>
+
+              {/* Name field */}
+              <div>
+                <label className="input-label">Nama Lengkap / Stage Name *</label>
+                <div className="input-group">
+                  <span style={{position:'absolute', left:'12px', top:'50%', transform:'translateY(-50%)', color:'var(--text-4)', display:'flex', pointerEvents:'none'}}>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+                  </span>
+                  <input
+                    type="text"
+                    required
+                    value={nameState}
+                    onChange={(e) => setNameState(e.target.value)}
+                    placeholder="Contoh: Rian Febrian / MC Kirana"
+                    className="input-field"
+                    style={{paddingLeft: '38px'}}
+                  />
+                </div>
+              </div>
+
               <div>
                 <label className="input-label">Email Pembayaran Anda</label>
                 <div className="input-group">
@@ -279,13 +303,6 @@ export const LoginPage: React.FC = () => {
                 Masuk sekarang
               </button>
             </p>
-
-            {/* Divider */}
-            <div style={{display:'flex', alignItems:'center', gap:'12px', margin:'20px 0'}}>
-              <div style={{flex:1, height:'1px', background:'var(--border)'}} />
-              <span style={{fontSize:'11px', fontWeight:'600', color:'var(--text-4)', textTransform:'uppercase', letterSpacing:'0.07em'}}>atau</span>
-              <div style={{flex:1, height:'1px', background:'var(--border)'}} />
-            </div>
 
             {/* Security Footer */}
             <div style={{display:'flex', alignItems:'center', justifyContent:'center', gap:'6px', marginTop:'28px'}}>

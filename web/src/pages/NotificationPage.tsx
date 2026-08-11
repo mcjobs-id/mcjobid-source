@@ -41,23 +41,7 @@ export const NotificationPage: React.FC<NotificationPageProps> = ({ onBack, book
   ];
 
   return (
-    <div className="animate-fade-in" style={{maxWidth:'800px', margin:'0 auto', paddingBottom:'24px'}}>
-      
-      {/* ── HEADER ── */}
-      <div className="page-header" style={{alignItems:'center'}}>
-        <div style={{display:'flex', alignItems:'center', gap:'16px'}}>
-          <button onClick={onBack} className="btn btn-ghost" style={{padding:'0 8px', marginLeft:'-8px'}}>
-            <ArrowLeft size={18} />
-          </button>
-          <div>
-            <h1 className="page-title" style={{display:'flex', alignItems:'center', gap:'8px'}}>
-              <Bell size={20} color="var(--error)" />
-              Pusat Pengingat
-            </h1>
-            <p className="page-subtitle">Notifikasi otomatis agenda H-1 dan tagihan sisa pelunasan.</p>
-          </div>
-        </div>
-      </div>
+    <div className="animate-fade-in" style={{width:'100%', paddingBottom:'24px'}}>
 
       <div style={{display:'flex', flexDirection:'column', gap:'16px'}}>
         {notifications.length === 0 ? (

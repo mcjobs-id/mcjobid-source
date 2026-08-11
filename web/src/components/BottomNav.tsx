@@ -8,28 +8,18 @@ interface BottomNavProps {
 }
 
 const tabs = [
-  { id: 'home',    label: 'Beranda',  icon: Home },
-  { id: 'agenda',  label: 'Agenda',   icon: Calendar },
-  { id: 'clients', label: 'Klien',    icon: Users },
-  { id: 'finance', label: 'Keuangan', icon: DollarSign },
-  { id: 'more',    label: 'Lainnya',  icon: Grid },
+  { id: 'home',    label: 'Beranda',    icon: Home },
+  { id: 'agenda',  label: 'Agenda',     icon: Calendar },
+  { id: 'clients', label: 'Klien & WO', icon: Users },
+  { id: 'finance', label: 'Keuangan',   icon: DollarSign },
+  { id: 'more',    label: 'Lainnya',    icon: Grid },
 ];
 
 export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, onChangeTab }) => {
   return (
     <nav
-      className="glass-bottom"
+      className="bottom-nav-bar"
       aria-label="Mobile Navigation Bar"
-      style={{
-        position: 'fixed', bottom: 0, left: 0, right: 0,
-        zIndex: 40,
-        paddingTop: '6px',
-        paddingLeft: '8px',
-        paddingRight: '8px',
-        paddingBottom: 'calc(8px + env(safe-area-inset-bottom, 0px))',
-        display: 'flex', alignItems: 'stretch',
-        gap: '4px',
-      }}
     >
       {tabs.map(({ id, label, icon: Icon }) => {
         const isActive = activeTab === id;
@@ -44,7 +34,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, onChangeTab }) 
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
-              justify: 'center',
+              justifyContent: 'center',
               gap: '3px',
               padding: '6px 4px',
               borderRadius: '10px',

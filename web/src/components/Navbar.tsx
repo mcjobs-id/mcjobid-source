@@ -1,27 +1,50 @@
 import React from 'react';
-import { Bell } from 'lucide-react';
+import logoUrl from '../../public/logo.png';
+
+import { Bell, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 interface NavbarProps {
   title?: string;
   subtitle?: string;
+  showBack?: boolean;
+  onBack?: () => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ title = 'mcjob.id', subtitle }) => {
-  const { userProfile } = useAuth();
+export const Navbar: React.FC<NavbarProps> = ({ title = 'mcjob.id', subtitle, showBack, onBack }) => {
+  const { userProfile, currentUser } = useAuth();
   const navigate = useNavigate();
+
+  const handleBack = () => {
+    if (onBack) {
+      onBack();
+    } else {
+      navigate(-1);
+    }
+  };
 
   return (
     <header className="top-navbar">
       {/* Left: Page Title */}
-      <div style={{flex:1, overflow:'hidden'}}>
-        {/* Mobile brand */}
-        <div style={{display:'flex', alignItems:'center', gap:'8px'}}>
-          <div className="md-hidden" style={{width:'26px', height:'26px', borderRadius:'7px', background:'var(--primary)', display:'flex', alignItems:'center', justifyContent:'center'}}>
-            <span style={{fontSize:'9px', fontWeight:'800', color:'white', letterSpacing:'-0.01em'}}>MC</span>
-          </div>
-          <div>
+      <div style={{flex:1, overflow:'hidden', display:'flex', alignItems:'center', gap:'10px'}}>
+        {showBack && (
+          <button
+            onClick={handleBack}
+            className="btn btn-ghost btn-sm"
+            style={{padding:'4px 8px', marginLeft:'-4px', gap:'6px', display:'flex', alignItems:'center', flexShrink:0, color:'var(--text-1)'}}
+            aria-label="Kembali"
+          >
+            <ArrowLeft size={18} />
+            <span style={{fontSize:'13px', fontWeight:'600'}} className="hidden sm:inline">Kembali</span>
+          </button>
+        )}
+        {/* Mobile brand logo from Android */}
+        <div style={{display:'flex', alignItems:'center', gap:'8px', minWidth:0, flex:1}}>
+          {!showBack && (
+            <img src={logoUrl} alt="MCJob.id Logo" style={{width:'28px', height:'28px', objectFit:'contain', borderRadius:'8px'}} className="block md:hidden" />
+          )}
+          <div style={{overflow:'hidden', minWidth:0}}>
             <h1 style={{fontSize:'15px', fontWeight:'700', color:'var(--text-1)', letterSpacing:'-0.015em', lineHeight:'1.2', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>
               {title}
             </h1>
@@ -50,23 +73,67 @@ export const Navbar: React.FC<NavbarProps> = ({ title = 'mcjob.id', subtitle }) 
         <div style={{width:'1px', height:'20px', background:'var(--border)', margin:'0 4px'}} />
 
         {/* User avatar pill */}
-        <div 
-          onClick={() => navigate('/profile')}
-          style={{display:'flex', alignItems:'center', gap:'8px', padding:'5px 10px 5px 5px', borderRadius:'9999px', background:'var(--bg-surface-2)', border:'1px solid var(--border)', cursor:'pointer'}}
-        >
-          <div style={{width:'24px', height:'24px', borderRadius:'50%', background:'var(--primary-light)', border:'1px solid rgba(79,70,229,0.25)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, overflow:'hidden'}}>
-            {userProfile?.photoUrl || userProfile?.photoUri ? (
-              <img src={userProfile.photoUrl || userProfile.photoUri} alt="Profile" style={{width:'100%', height:'100%', objectFit:'cover'}} />
-            ) : (
-              <span style={{fontSize:'10px', fontWeight:'700', color:'var(--primary)'}}>
-                {userProfile?.displayName?.charAt(0).toUpperCase() || 'M'}
+        {(() => {
+          const userName = userProfile?.stageName?.trim() || userProfile?.displayName?.trim() || userProfile?.name?.trim() || currentUser?.displayName?.trim() || 'Profil MC';
+          const userPhoto = userProfile?.photoUrl || userProfile?.photoUri || currentUser?.photoURL;
+          const initial = userName.charAt(0).toUpperCase();
+
+          return (
+            <div 
+              onClick={() => navigate('/profile')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '4px 12px 4px 5px',
+                borderRadius: '9999px',
+                background: 'var(--bg-surface-2)',
+                border: '1px solid var(--border)',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease'
+              }}
+              title="Pengaturan Profil MC"
+            >
+              <div style={{
+                width: '26px',
+                height: '26px',
+                borderRadius: '50%',
+                background: 'linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 100%)',
+                border: '1.5px solid var(--primary)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+                overflow: 'hidden'
+              }}>
+                {userPhoto ? (
+                  <img
+                    src={userPhoto}
+                    alt={userName}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    referrerPolicy="no-referrer"
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                  />
+                ) : (
+                  <span style={{ fontSize: '11px', fontWeight: '800', color: 'var(--primary)' }}>
+                    {initial}
+                  </span>
+                )}
+              </div>
+              <span style={{
+                fontSize: '12px',
+                fontWeight: '700',
+                color: 'var(--text-1)',
+                maxWidth: '120px',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap'
+              }}>
+                {userName}
               </span>
-            )}
-          </div>
-          <span style={{fontSize:'12px', fontWeight:'600', color:'var(--text-2)', maxWidth:'100px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>
-            {userProfile?.displayName || 'MC Studio'}
-          </span>
-        </div>
+            </div>
+          );
+        })()}
       </div>
     </header>
   );

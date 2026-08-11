@@ -78,22 +78,7 @@ export const FollowUpPage: React.FC<FollowUpPageProps> = ({ onBack, bookings, cl
   };
 
   return (
-    <div className="animate-fade-in" style={{maxWidth:'850px', margin:'0 auto', paddingBottom:'32px'}}>
-      
-      {/* ── HEADER ── */}
-      <div className="page-header" style={{alignItems:'center'}}>
-        <div style={{display:'flex', alignItems:'center', gap:'16px'}}>
-          <button onClick={onBack} className="btn btn-ghost" style={{padding:'0 8px', marginLeft:'-8px'}}>
-            <ArrowLeft size={18} />
-          </button>
-          <div>
-            <h1 className="page-title" style={{display:'flex', alignItems:'center', gap:'8px'}}>
-              <MessageSquare size={20} color="#2563EB" /> Pusat Follow Up Klien
-            </h1>
-            <p className="page-subtitle">Otomatisasi pengingat pelunasan piutang & konfirmasi H-7 acara via WA.</p>
-          </div>
-        </div>
-      </div>
+    <div className="animate-fade-in" style={{width:'100%', paddingBottom:'32px'}}>
 
       {/* ── FILTER & SEARCH ── */}
       <div style={{display:'flex', flexDirection:'column', gap:'12px', marginBottom:'20px'}}>

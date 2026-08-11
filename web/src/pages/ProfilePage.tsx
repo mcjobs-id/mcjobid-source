@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import {
   ArrowLeft, User, Phone, MapPin, CheckCircle2, ShieldCheck,
   Building, CreditCard, AtSign, Percent, FileText, Hash,
-  Star, Globe, AlertCircle, Save
+  Star, Globe, AlertCircle, Save, Upload
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { updateProfile } from 'firebase/auth';
@@ -18,8 +18,8 @@ type SectionKey = 'identity' | 'contact' | 'professional' | 'banking' | 'busines
 export const ProfilePage: React.FC<ProfilePageProps> = ({ onBack }) => {
   const { currentUser, userProfile, updateContextProfile } = useAuth();
 
-  const [form, setForm] = useState<Partial<UserProfile>>({
-    displayName: userProfile?.displayName || userProfile?.name || '',
+  const [form, setForm] = useState<Partial<UserProfile>>(() => ({
+    displayName: userProfile?.displayName || userProfile?.name || currentUser?.displayName || '',
     stageName: userProfile?.stageName || '',
     bio: userProfile?.bio || '',
     city: userProfile?.city || '',
@@ -36,14 +36,44 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onBack }) => {
     bankAccountHolder: userProfile?.bankAccountHolder || userProfile?.bankHolder || '',
     secondaryBankInfo: userProfile?.secondaryBankInfo || '',
     baseFee: userProfile?.baseFee || 0,
-    defaultDpPercentage: userProfile?.defaultDpPercentage || 30,
+    defaultDpPercentage: userProfile?.defaultDpPercentage ?? 30,
     npwpNumber: userProfile?.npwpNumber || '',
     termsAndConditions: userProfile?.termsAndConditions || '',
-  });
+    photoUrl: userProfile?.photoUrl || userProfile?.photoUri || currentUser?.photoURL || '',
+  }));
 
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [activeSection, setActiveSection] = useState<SectionKey>('identity');
+
+  // Reactively sync form fields when userProfile is loaded or updated asynchronously
+  React.useEffect(() => {
+    if (userProfile) {
+      setForm({
+        displayName: userProfile.displayName || userProfile.name || currentUser?.displayName || '',
+        stageName: userProfile.stageName || '',
+        bio: userProfile.bio || '',
+        city: userProfile.city || '',
+        areaCoverage: userProfile.areaCoverage || '',
+        specialization: userProfile.specialization || '',
+        languages: userProfile.languages || '',
+        experienceYears: userProfile.experienceYears || '',
+        phone: userProfile.phone || userProfile.phoneNumber || '',
+        secondaryPhone: userProfile.secondaryPhone || '',
+        instagram: userProfile.instagram || userProfile.instagramHandle || '',
+        tiktok: userProfile.tiktok || '',
+        bankName: userProfile.bankName || '',
+        bankAccountNumber: userProfile.bankAccountNumber || userProfile.bankAccount || '',
+        bankAccountHolder: userProfile.bankAccountHolder || userProfile.bankHolder || '',
+        secondaryBankInfo: userProfile.secondaryBankInfo || '',
+        baseFee: userProfile.baseFee || 0,
+        defaultDpPercentage: userProfile.defaultDpPercentage ?? 30,
+        npwpNumber: userProfile.npwpNumber || '',
+        termsAndConditions: userProfile.termsAndConditions || '',
+        photoUrl: userProfile.photoUrl || userProfile.photoUri || currentUser?.photoURL || '',
+      });
+    }
+  }, [userProfile, currentUser]);
 
   const set = (key: keyof UserProfile, value: any) => {
     setForm(prev => ({ ...prev, [key]: value }));
@@ -52,6 +82,11 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onBack }) => {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentUser) return;
+    if (!form.displayName?.trim()) {
+      setMessage({ type: 'error', text: 'Nama Lengkap / Nama Panggung wajib diisi.' });
+      return;
+    }
+
     setSaving(true);
     setMessage(null);
     try {
@@ -59,27 +94,38 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onBack }) => {
         await updateProfile(currentUser, { displayName: form.displayName });
       }
 
+      const cleanDpPct = Math.min(100, Math.max(0, Number(form.defaultDpPercentage) || 30));
+      const cleanBaseFee = Math.max(0, Number(form.baseFee) || 0);
+
       const updatedProfile: UserProfile = {
         uid: currentUser.uid,
         email: currentUser.email || '',
         ...form,
-        // Ensure all aliases are synchronized
-        name: form.displayName,
-        phoneNumber: form.phone,
-        instagramHandle: form.instagram,
-        bankAccount: form.bankAccountNumber,
-        bankHolder: form.bankAccountHolder,
-        profileCompleted: !!(form.displayName && form.phone && form.city && form.bankAccountNumber),
+        displayName: form.displayName.trim(),
+        name: form.displayName.trim(),
+        phone: form.phone?.trim() || '',
+        phoneNumber: form.phone?.trim() || '',
+        bankAccountNumber: form.bankAccountNumber?.trim() || '',
+        bankAccount: form.bankAccountNumber?.trim() || '',
+        bankAccountHolder: form.bankAccountHolder?.trim() || '',
+        bankHolder: form.bankAccountHolder?.trim() || '',
+        instagram: form.instagram?.trim() || '',
+        instagramHandle: form.instagram?.trim() || '',
+        photoUrl: form.photoUrl?.trim() || '',
+        photoUri: form.photoUrl?.trim() || '',
+        baseFee: cleanBaseFee,
+        defaultDpPercentage: cleanDpPct,
+        profileCompleted: Boolean(form.displayName?.trim() && (form.phone?.trim() || form.city?.trim() || userProfile?.profileCompleted)),
         updatedAt: new Date().toISOString()
       };
 
       await saveUserProfile(updatedProfile);
       updateContextProfile(updatedProfile);
-      setMessage({ type: 'success', text: 'Profil berhasil diperbarui!' });
+      setMessage({ type: 'success', text: 'Profil MC berhasil disimpan & tersinkronisasi!' });
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (error) {
       console.error(error);
-      setMessage({ type: 'error', text: 'Gagal memperbarui profil. Coba lagi.' });
+      setMessage({ type: 'error', text: 'Gagal memperbarui profil. Periksa koneksi Anda dan coba lagi.' });
     } finally {
       setSaving(false);
     }
@@ -100,27 +146,14 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onBack }) => {
   const completionPct = Math.round((completedCount / 6) * 100);
 
   return (
-    <div className="animate-fade-in" style={{ maxWidth: '760px', margin: '0 auto', paddingBottom: '40px' }}>
-
-      {/* Header */}
-      <div className="page-header" style={{ alignItems: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <button onClick={onBack} className="btn btn-ghost" style={{ padding: '0 8px', marginLeft: '-8px' }}>
-            <ArrowLeft size={18} />
-          </button>
-          <div>
-            <h1 className="page-title">Pengaturan Profil MC</h1>
-            <p className="page-subtitle">Kelola informasi pribadi, profesional, dan rekening pembayaran.</p>
-          </div>
-        </div>
-      </div>
+    <div className="animate-fade-in" style={{ width: '100%', paddingBottom: '40px' }}>
 
       {/* Profile Banner */}
       <div className="card" style={{ padding: '24px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap' }}>
-        <div style={{ width: '72px', height: '72px', borderRadius: '20px', background: 'var(--primary-light)', border: '2px solid rgba(79,70,229,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-          {currentUser?.photoURL
-            ? <img src={currentUser.photoURL} alt="avatar" style={{ width: '100%', height: '100%', borderRadius: '18px', objectFit: 'cover' }} />
-            : <span style={{ fontSize: '28px', fontWeight: '800', color: 'var(--primary)' }}>{(form.displayName || 'M').charAt(0).toUpperCase()}</span>
+        <div style={{ width: '72px', height: '72px', borderRadius: '20px', background: 'var(--primary-light)', border: '2px solid rgba(79,70,229,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, overflow: 'hidden' }}>
+          {form.photoUrl
+            ? <img src={form.photoUrl as string} alt="avatar" style={{ width: '100%', height: '100%', borderRadius: '18px', objectFit: 'cover' }} referrerPolicy="no-referrer" onError={(e) => { (e.target as HTMLImageElement).style.display='none'; }} />
+            : <span style={{ fontSize: '28px', fontWeight: '800', color: 'var(--primary)' }}>{(form.displayName || currentUser?.displayName || 'M').charAt(0).toUpperCase()}</span>
           }
         </div>
         <div style={{ flex: 1 }}>
@@ -180,21 +213,74 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onBack }) => {
           {activeSection === 'identity' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               <SectionTitle icon={<User size={15} />} title="Identitas MC" subtitle="Nama dan informasi dasar yang tampil di invoice dan profil publik." />
+
+              {/* Photo Input (File Upload + URL) */}
+              <div>
+                <label className="input-label">Foto Profil MC</label>
+                <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '8px' }}>
+                  <label
+                    className="btn btn-secondary btn-sm"
+                    style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '700' }}
+                  >
+                    <Upload size={14} /> Pilih Foto dari Perangkat
+                    <input
+                      type="file"
+                      accept="image/*"
+                      style={{ display: 'none' }}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          if (file.size > 2 * 1024 * 1024) {
+                            setMessage({ type: 'error', text: 'Ukuran foto maksimal 2MB agar loading cepat.' });
+                            return;
+                          }
+                          const reader = new FileReader();
+                          reader.onload = (event) => {
+                            if (event.target?.result) {
+                              set('photoUrl', event.target.result as string);
+                            }
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                    />
+                  </label>
+                  {form.photoUrl && (
+                    <button
+                      type="button"
+                      onClick={() => set('photoUrl', '')}
+                      className="btn btn-ghost btn-sm"
+                      style={{ color: 'var(--error)', fontSize: '12px' }}
+                    >
+                      Hapus Foto
+                    </button>
+                  )}
+                </div>
+                <input
+                  type="url"
+                  value={typeof form.photoUrl === 'string' && !form.photoUrl.startsWith('data:') ? form.photoUrl : ''}
+                  onChange={e => set('photoUrl', e.target.value)}
+                  className="input-field"
+                  placeholder="Atau masukkan URL foto (https://...)"
+                />
+                <p className="input-hint">Foto profil Anda akan terintegrasi langsung di Navbar, Hub Bisnis, dan Invoice.</p>
+              </div>
+
               <div>
                 <label className="input-label">Email (Read-only)</label>
                 <input type="email" value={currentUser?.email || ''} disabled className="input-field" style={{ background: 'var(--bg-surface-2)', color: 'var(--text-4)' }} />
-                <p className="input-hint">Email adalah identitas utama dan tidak dapat diubah.</p>
+                <p className="input-hint">Email adalah identitas akun utama.</p>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                 <div>
-                  <label className="input-label">Nama Lengkap / Nama Panggung *</label>
+                  <label className="input-label">Nama Lengkap *</label>
                   <div className="input-group"><User size={14} className="input-icon-left" />
                     <input type="text" required value={form.displayName || ''} onChange={e => set('displayName', e.target.value)} className="input-field" placeholder="Nama MC Anda" />
                   </div>
                 </div>
                 <div>
-                  <label className="input-label">Nama Panggung / Stage Name</label>
-                  <input type="text" value={form.stageName || ''} onChange={e => set('stageName', e.target.value)} className="input-field" placeholder="Nama panggung (jika beda)" />
+                  <label className="input-label">Nama Panggung</label>
+                  <input type="text" value={form.stageName || ''} onChange={e => set('stageName', e.target.value)} className="input-field" placeholder="Nama panggung jika ada" />
                 </div>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
@@ -331,6 +417,18 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onBack }) => {
           )}
 
         </div>
+
+        {message && (
+          <div style={{
+            marginTop: '16px', padding: '12px 16px', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '10px',
+            background: message.type === 'success' ? 'var(--success-light)' : 'var(--error-light)',
+            border: `1px solid ${message.type === 'success' ? 'rgba(5,150,105,0.2)' : 'rgba(220,38,38,0.2)'}`,
+            color: message.type === 'success' ? 'var(--success-text)' : 'var(--error-text)'
+          }}>
+            {message.type === 'success' ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
+            <p style={{ fontSize: '13px', fontWeight: '600' }}>{message.text}</p>
+          </div>
+        )}
 
         <div style={{ marginTop: '20px', display: 'flex', gap: '12px' }}>
           <button type="submit" disabled={saving} className="btn btn-primary btn-lg" style={{ flex: 1, gap: '6px' }}>

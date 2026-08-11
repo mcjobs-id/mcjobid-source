@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { ArrowLeft, Plus, Tag, Trash2, Edit2, Copy, CheckCircle2, Share2, Search, MessageSquare, ExternalLink, Calendar, User, Save } from 'lucide-react';
 import type { RateCard } from '../types';
 import { useAuth } from '../context/AuthContext';
+import { FAB } from '../components/FAB';
 
 interface PriceListPageProps {
   onBack: () => void;
@@ -44,10 +46,13 @@ export const PriceListPage: React.FC<PriceListPageProps> = ({
   // WhatsApp Quote Modal/Sheet state
   const [shareModalCard, setShareModalCard] = useState<RateCard | null>(null);
   const [clientName, setClientName] = useState('');
+  const [clientPhone, setClientPhone] = useState('');
   const [eventDate, setEventDate] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
 
   const openFormScreen = (card?: RateCard) => {
+    setFormError(null);
     if (card) {
       setEditingCard(card);
       setName(card.name || card.title || '');
@@ -74,27 +79,44 @@ export const PriceListPage: React.FC<PriceListPageProps> = ({
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentUser || price === '') return;
+    setFormError(null);
+
+    if (!name.trim()) {
+      setFormError('Nama paket harga wajib diisi.');
+      return;
+    }
+    const priceVal = Number(price);
+    if (price === '' || isNaN(priceVal) || priceVal <= 0) {
+      setFormError('Harga paket harus lebih besar dari Rp 0.');
+      return;
+    }
+    const featureList = features.split('\n').map(f => f.trim()).filter(Boolean);
+    if (featureList.length === 0) {
+      setFormError('Fasilitas termasuk (inklusi) wajib diisi minimal 1 poin.');
+      return;
+    }
+
+    const uid = currentUser?.uid || 'user_local';
     setSaving(true);
     try {
-      const featureList = features.split('\n').filter(f => f.trim() !== '');
-      const addOnList = addOns.split('\n').filter(a => a.trim() !== '');
+      const addOnList = addOns.split('\n').map(a => a.trim()).filter(Boolean);
+      const cleanDuration = Math.max(0.5, Number(durationHours) || 3);
       
       const cardData: RateCard = {
         id: editingCard ? editingCard.id : `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-        ownerId: currentUser.uid,
-        name,
-        title: name,
+        ownerId: uid,
+        name: name.trim(),
+        title: name.trim(),
         category,
-        price: Number(price),
-        durationHours: Number(durationHours) || 3,
-        duration: `${durationHours || 3} Jam`,
+        price: priceVal,
+        durationHours: cleanDuration,
+        duration: `${cleanDuration} Jam`,
         features: featureList,
         inclusions: featureList,
         addOns: addOnList,
-        terms,
-        notes,
-        description: notes,
+        terms: terms.trim(),
+        notes: notes.trim(),
+        description: notes.trim(),
         createdAt: editingCard ? editingCard.createdAt : new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
@@ -104,6 +126,7 @@ export const PriceListPage: React.FC<PriceListPageProps> = ({
       setViewMode('list');
     } catch (err) {
       console.error(err);
+      setFormError('Gagal menyimpan paket harga. Periksa koneksi internet Anda.');
     } finally {
       setSaving(false);
     }
@@ -120,7 +143,7 @@ export const PriceListPage: React.FC<PriceListPageProps> = ({
 
   // Build formatted WA Quote string (Android logic)
   const generateWaQuoteText = (card: RateCard, cName: string, eDate: string) => {
-    const mcName = userProfile?.displayName || 'MC Professional';
+    const mcName = userProfile?.stageName || userProfile?.displayName || 'MC Professional';
     const inclusions = (card.inclusions || card.features || []);
     const addOnsList = (card.addOns || []);
     
@@ -173,7 +196,12 @@ export const PriceListPage: React.FC<PriceListPageProps> = ({
     if (!shareModalCard) return;
     const txt = generateWaQuoteText(shareModalCard, clientName, eventDate);
     const encoded = encodeURIComponent(txt);
-    window.open(`https://api.whatsapp.com/send?text=${encoded}`, '_blank');
+    const cleanPhone = clientPhone.replace(/[^0-9]/g, '');
+    const formattedPhone = cleanPhone ? (cleanPhone.startsWith('0') ? '62' + cleanPhone.slice(1) : cleanPhone) : '';
+    const url = formattedPhone
+      ? `https://api.whatsapp.com/send?phone=${formattedPhone}&text=${encoded}`
+      : `https://api.whatsapp.com/send?text=${encoded}`;
+    window.open(url, '_blank');
   };
 
   // Filtered rate cards
@@ -190,7 +218,7 @@ export const PriceListPage: React.FC<PriceListPageProps> = ({
   // ── RENDER HALAMAN TAMBAH / EDIT PAKET (DEDICATED FORM PAGE) ──
   if (viewMode === 'form') {
     return (
-      <div className="animate-fade-in" style={{maxWidth:'800px', margin:'0 auto', paddingBottom:'32px'}}>
+      <div className="animate-fade-in" style={{width:'100%', paddingBottom:'32px'}}>
         
         {/* Form Page Header */}
         <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'24px'}}>
@@ -208,6 +236,16 @@ export const PriceListPage: React.FC<PriceListPageProps> = ({
             Batal
           </button>
         </div>
+
+        {formError && (
+          <div style={{
+            marginBottom: '20px', padding: '12px 16px', borderRadius: '10px',
+            background: 'var(--error-light)', color: 'var(--error)', fontSize: '13px',
+            fontWeight: '700', border: '1px solid rgba(220,38,38,0.2)'
+          }}>
+            ⚠️ {formError}
+          </div>
+        )}
 
         {/* Dedicated Form Body */}
         <form onSubmit={handleSave} style={{display:'flex', flexDirection:'column', gap:'20px'}}>
@@ -331,7 +369,7 @@ export const PriceListPage: React.FC<PriceListPageProps> = ({
               disabled={saving} 
               className="btn btn-primary btn-full btn-lg"
             >
-              <Save size={16} /> {saving ? 'Menyimpan Paket...' : 'Simpan Paket Harga 🚀'}
+              <Save size={16} /> {saving ? 'Menyimpan Paket...' : 'Simpan Paket'}
             </button>
           </div>
         </form>
@@ -341,56 +379,39 @@ export const PriceListPage: React.FC<PriceListPageProps> = ({
 
   // ── RENDER HALAMAN KATALOG RATE CARD (LIST VIEW) ──
   return (
-    <div className="animate-fade-in" style={{maxWidth:'1000px', margin:'0 auto', paddingBottom:'32px'}}>
+    <div className="animate-fade-in" style={{width:'100%', paddingBottom:'32px'}}>
       
-      {/* ── HEADER ── */}
-      <div className="page-header" style={{alignItems:'center'}}>
-        <div style={{display:'flex', alignItems:'center', gap:'16px'}}>
-          <button onClick={onBack} className="btn btn-ghost" style={{padding:'0 8px', marginLeft:'-8px'}}>
-            <ArrowLeft size={18} />
-          </button>
-          <div>
-            <h1 className="page-title" style={{display:'flex', alignItems:'center', gap:'8px'}}>
-              <Tag size={20} color="var(--primary)" /> Rate Card & Price List
-            </h1>
-            <p className="page-subtitle">Katalog paket harga MC & generator penawaran langsung ke WhatsApp klien.</p>
-          </div>
-        </div>
-        <button onClick={() => openFormScreen()} className="btn btn-primary">
-          <Plus size={15} /> Buat Paket Baru 🚀
-        </button>
+      {/* ── SEARCH BAR ── */}
+      <div style={{position:'relative', width:'100%', marginBottom:'16px'}}>
+        <Search size={16} color="var(--text-3)" style={{position:'absolute', left:'14px', top:'50%', transform:'translateY(-50%)'}} />
+        <input
+          type="text"
+          className="input-field"
+          style={{paddingLeft:'38px'}}
+          placeholder="Cari nama paket, fasilitas, atau kata kunci..."
+          value={searchQuery}
+          onChange={e => setSearchQuery(e.target.value)}
+        />
       </div>
-
-      {/* ── SEARCH & CATEGORY CHIPS ── */}
-      <div style={{display:'flex', flexDirection:'column', gap:'12px', marginBottom:'24px'}}>
-        <div style={{position:'relative', width:'100%'}}>
-          <Search size={16} color="var(--text-3)" style={{position:'absolute', left:'14px', top:'50%', transform:'translateY(-50%)'}} />
-          <input
-            type="text"
-            className="input-field"
-            style={{paddingLeft:'38px'}}
-            placeholder="Cari nama paket, fasilitas, atau kata kunci..."
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-          />
-        </div>
-        
-        <div style={{display:'flex', gap:'8px', overflowX:'auto', paddingBottom:'4px'}}>
-          {CATEGORIES.map(cat => (
-            <button
-              key={cat}
-              onClick={() => setSelectedCategory(cat)}
-              className={`badge ${selectedCategory === cat ? 'badge-primary' : 'badge-neutral'}`}
-              style={{
-                cursor:'pointer', padding:'8px 14px', fontSize:'13px', borderRadius:'9999px',
-                border: selectedCategory === cat ? 'none' : '1px solid var(--border)',
-                background: selectedCategory === cat ? 'var(--primary)' : 'var(--bg-surface)'
-              }}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
+      
+      {/* ── CATEGORY CHIPS ── */}
+      <div style={{display:'flex', gap:'8px', overflowX:'auto', paddingBottom:'4px', marginBottom:'24px'}} className="scrollbar-none">
+        {CATEGORIES.map(cat => (
+          <button
+            key={cat}
+            onClick={() => setSelectedCategory(cat)}
+            className="badge"
+            style={{
+              cursor:'pointer', padding:'8px 14px', fontSize:'12px', fontWeight:'700', borderRadius:'9999px',
+              border: selectedCategory === cat ? '1px solid var(--primary)' : '1px solid var(--border)',
+              background: selectedCategory === cat ? 'var(--primary)' : 'var(--bg-surface-2)',
+              color: selectedCategory === cat ? '#FFFFFF' : 'var(--text-2)',
+              whiteSpace:'nowrap', flexShrink:0, transition:'all 0.15s'
+            }}
+          >
+            {cat}
+          </button>
+        ))}
       </div>
 
       {/* ── GRID KATALOG ── */}
@@ -399,15 +420,12 @@ export const PriceListPage: React.FC<PriceListPageProps> = ({
           <div className="empty-state-icon"><Tag size={24} /></div>
           <div>
             <p style={{fontSize:'14px', fontWeight:'600', color:'var(--text-1)', marginBottom:'4px'}}>Tidak ada paket harga</p>
-            <p style={{fontSize:'12px', color:'var(--text-3)', maxWidth:'280px', margin:'0 auto'}}>
+            <p style={{fontSize:'12px', color:'var(--text-3)', maxWidth:'320px', margin:'0 auto'}}>
               {searchQuery || selectedCategory !== 'Semua' 
                 ? 'Tidak ada paket yang sesuai dengan filter atau kata kunci pencarian Anda.'
-                : 'Buat paket harga pertama (contoh: Gold Wedding, Corporate Event) untuk memudahkan penawaran ke klien.'}
+                : 'Buat paket harga pertama (contoh: Gold Wedding, Corporate Event) menggunakan tombol Tambah Paket di atas.'}
             </p>
           </div>
-          <button onClick={() => openFormScreen()} className="btn btn-primary btn-sm" style={{marginTop:'8px'}}>
-            <Plus size={14} /> Buat Paket Baru
-          </button>
         </div>
       ) : (
         <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(300px, 1fr))', gap:'20px'}}>
@@ -495,7 +513,7 @@ export const PriceListPage: React.FC<PriceListPageProps> = ({
       )}
 
       {/* ── SHEET SHARE WA QUOTE ── */}
-      {shareModalCard && (
+      {shareModalCard && createPortal(
         <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setShareModalCard(null); }}>
           <div className="modal-panel animate-fade-in" style={{maxWidth:'550px'}}>
             <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'16px'}}>
@@ -504,10 +522,14 @@ export const PriceListPage: React.FC<PriceListPageProps> = ({
             </div>
 
             <div style={{display:'flex', flexDirection:'column', gap:'16px'}}>
-              <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px'}}>
+              <div style={{display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'12px'}}>
                 <div>
                   <label className="input-label"><User size={12} /> Nama Klien / Pasangan</label>
                   <input type="text" value={clientName} onChange={e => setClientName(e.target.value)} className="input-field" placeholder="Bpk. Kevin & Vania" />
+                </div>
+                <div>
+                  <label className="input-label"><MessageSquare size={12} /> No. WhatsApp Klien</label>
+                  <input type="tel" value={clientPhone} onChange={e => setClientPhone(e.target.value)} className="input-field" placeholder="081234567890" />
                 </div>
                 <div>
                   <label className="input-label"><Calendar size={12} /> Rencana Tanggal</label>
@@ -545,9 +567,14 @@ export const PriceListPage: React.FC<PriceListPageProps> = ({
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
+      {/* ── FLOATING ACTION BUTTON ── */}
+      {viewMode === 'list' && (
+        <FAB onClick={() => openFormScreen()} label="Tambah Paket" />
+      )}
     </div>
   );
 };
