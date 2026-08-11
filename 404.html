@@ -16,8 +16,18 @@
     <link rel="apple-touch-icon" href="/logo.png" />
 
     <title>MCJobId - Master of Ceremonies Job & Finance Hub</title>
-    <script type="module" crossorigin src="/assets/index-1zzsJcEA.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-BybIf4Rv.css">
+    <script>
+      (function() {
+        if (window.location.hash && window.location.hash.startsWith('#/')) {
+          var route = window.location.hash.substring(2);
+          if (route.startsWith('/')) route = route.substring(1);
+          var newPath = route.startsWith('user/') ? '/' + route : '/user/' + (route || 'home');
+          window.history.replaceState(null, '', newPath);
+        }
+      })();
+    </script>
+    <script type="module" crossorigin src="/assets/index-DkLnDdsn.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-ByZ_5U9E.css">
   </head>
   <body>
     <div id="root"></div>
