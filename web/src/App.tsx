@@ -286,6 +286,7 @@ const MainApp: React.FC = () => {
               setShowWizardModal(false);
             }}
             clients={contextValue.clients}
+            existingBookings={contextValue.bookings}
           />
         )}
       </OutletContext.Provider>
