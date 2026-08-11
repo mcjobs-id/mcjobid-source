@@ -190,6 +190,14 @@ const MainApp: React.FC = () => {
     return () => unsubs.forEach(u => u());
   }, [currentUser, authState]);
 
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.hash.startsWith('#/')) {
+      const rawPath = window.location.hash.replace('#/', '');
+      const cleanPath = rawPath.startsWith('user/') ? rawPath : `user/${rawPath}`;
+      window.history.replaceState(null, '', `/${cleanPath}`);
+    }
+  }, []);
+
   // Show loading during auth initialization
   if (loading) return <AppLoadingScreen />;
 
@@ -357,14 +365,6 @@ const MainApp: React.FC = () => {
     handleSaveInvoice,
     currentUserId: currentUser.uid,
   };
-
-  useEffect(() => {
-    if (typeof window !== 'undefined' && window.location.hash.startsWith('#/')) {
-      const rawPath = window.location.hash.replace('#/', '');
-      const cleanPath = rawPath.startsWith('user/') ? rawPath : `user/${rawPath}`;
-      window.history.replaceState(null, '', `/${cleanPath}`);
-    }
-  }, []);
 
   return (
     <BrowserRouter>
