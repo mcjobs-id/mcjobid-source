@@ -42,7 +42,7 @@ const useOutletContext = () => useContext(OutletContext);
 const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { isDarkMode, setIsDarkMode, setShowWizardModal } = useOutletContext();
+  const { setShowWizardModal } = useOutletContext();
 
   const path = location.pathname;
   let activeTab: TabType = 'home';
@@ -101,15 +101,11 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           activeTab={activeTab}
           onChangeTab={(t) => navigate(`/${t}`)}
           onOpenCreateJob={() => setShowWizardModal(true)}
-          isDarkMode={isDarkMode}
-          onToggleDarkMode={() => setIsDarkMode(!isDarkMode)}
         />
       )}
       <div className="main-area">
         {!isDayMode && (
           <Navbar
-            isDarkMode={isDarkMode}
-            onToggleDarkMode={() => setIsDarkMode(!isDarkMode)}
             title={getPageTitle()}
           />
         )}
@@ -155,9 +151,6 @@ const AppLoadingScreen = () => (
 const MainApp: React.FC = () => {
   const { currentUser, authState, loading } = useAuth();
 
-  const [isDarkMode, setIsDarkMode] = useState(() =>
-    window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false
-  );
   const [showWizardModal, setShowWizardModal] = useState(false);
 
   // Firestore collections
@@ -168,9 +161,7 @@ const MainApp: React.FC = () => {
   const [rateCards, setRateCards] = useState<RateCard[]>([]);
   const [todos, setTodos] = useState<TodoItem[]>([]);
 
-  useEffect(() => {
-    document.documentElement.classList.toggle('dark', isDarkMode);
-  }, [isDarkMode]);
+
 
   useEffect(() => {
     // Only subscribe to user data if the profile is fully ready.
@@ -260,7 +251,7 @@ const MainApp: React.FC = () => {
   };
 
   const contextValue = {
-    isDarkMode, setIsDarkMode, setShowWizardModal,
+    setShowWizardModal,
     bookings, expenses, payments, clients, rateCards, todos,
     handleSaveBooking, handleDeleteBooking,
     handleSaveExpense, handleDeleteExpense,

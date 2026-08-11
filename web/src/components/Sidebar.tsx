@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, Calendar, Users, DollarSign, Grid, Plus, LogOut, Moon, Sun, ChevronDown } from 'lucide-react';
+import { Home, Calendar, Users, DollarSign, Grid, Plus, LogOut, ChevronDown } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export type TabType = 
@@ -19,12 +19,10 @@ interface SidebarProps {
   activeTab: TabType;
   onChangeTab: (tab: TabType) => void;
   onOpenCreateJob: () => void;
-  isDarkMode: boolean;
-  onToggleDarkMode: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
-  activeTab, onChangeTab, onOpenCreateJob, isDarkMode, onToggleDarkMode
+  activeTab, onChangeTab, onOpenCreateJob
 }) => {
   const { userProfile, logout } = useAuth();
 
@@ -80,16 +78,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Bottom User Widget */}
       <div style={{padding:'12px', borderTop:'1px solid var(--border)', flexShrink:0}}>
-        {/* Theme Toggle */}
-        <button
-          onClick={onToggleDarkMode}
-          className="btn btn-ghost btn-sm btn-full"
-          style={{justifyContent:'flex-start', gap:'10px', marginBottom:'6px', fontSize:'12px', color:'var(--text-3)'}}
-        >
-          {isDarkMode ? <Sun size={14} /> : <Moon size={14} />}
-          {isDarkMode ? 'Mode Terang' : 'Mode Gelap'}
-        </button>
-
         {/* User profile */}
         <div style={{display:'flex', alignItems:'center', gap:'10px', padding:'8px 10px', borderRadius:'10px', background:'var(--bg-surface-2)', border:'1px solid var(--border)'}}>
           <div style={{width:'30px', height:'30px', borderRadius:'50%', background:'var(--primary-light)', border:'1px solid rgba(79,70,229,0.25)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0}}>

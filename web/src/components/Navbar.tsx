@@ -1,16 +1,14 @@
 import React from 'react';
-import { Moon, Sun, Bell } from 'lucide-react';
+import { Bell } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 interface NavbarProps {
-  isDarkMode: boolean;
-  onToggleDarkMode: () => void;
   title?: string;
   subtitle?: string;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ isDarkMode, onToggleDarkMode, title = 'mcjob.id', subtitle }) => {
+export const Navbar: React.FC<NavbarProps> = ({ title = 'mcjob.id', subtitle }) => {
   const { userProfile } = useAuth();
   const navigate = useNavigate();
 
@@ -36,15 +34,6 @@ export const Navbar: React.FC<NavbarProps> = ({ isDarkMode, onToggleDarkMode, ti
 
       {/* Right: Actions */}
       <div style={{display:'flex', alignItems:'center', gap:'6px'}}>
-        {/* Dark mode toggle — show only on mobile (sidebar handles desktop) */}
-        <button
-          onClick={onToggleDarkMode}
-          className="btn btn-ghost btn-sm"
-          style={{width:'36px', padding:0, display:'flex', alignItems:'center', justifyContent:'center'}}
-          aria-label="Toggle Theme"
-        >
-          {isDarkMode ? <Sun size={16} style={{color:'#FCD34D'}} /> : <Moon size={16} />}
-        </button>
 
         {/* Notification bell */}
         <button
