@@ -7,14 +7,22 @@ import { BottomNav } from './components/BottomNav';
 import { LoginPage } from './pages/LoginPage';
 import { WizardPage } from './pages/WizardPage';
 import { HomePage } from './pages/HomePage';
-import { BookingsPage } from './pages/BookingsPage';
+import { AgendaPage } from './pages/AgendaPage';
+import { ClientsPage } from './pages/ClientsPage';
+import { FinancePage } from './pages/FinancePage';
+import { MorePage } from './pages/MorePage';
+
 import { BookingDetailPage } from './pages/BookingDetailPage';
 import { McDayModePage } from './pages/McDayModePage';
 import { InvoicePage } from './pages/InvoicePage';
-import { FinancePage } from './pages/FinancePage';
-import { ClientsPage } from './pages/ClientsPage';
 import { PriceListPage } from './pages/PriceListPage';
 import { ProfilePage } from './pages/ProfilePage';
+
+import { AnalyticsPage } from './pages/AnalyticsPage';
+import { FollowUpPage } from './pages/FollowUpPage';
+import { TodoPage } from './pages/TodoPage';
+import { NotificationPage } from './pages/NotificationPage';
+import { QuickActionSettingsPage } from './pages/QuickActionSettingsPage';
 
 import type { Booking, Expense, Client, RateCard } from './types';
 import {
@@ -34,8 +42,24 @@ import {
 
 const MainApp: React.FC = () => {
   const { currentUser, userProfile, loading } = useAuth();
+  
+  // 5 Main Tabs matching Android app: 'home' | 'agenda' | 'clients' | 'finance' | 'more'
   const [activeTab, setActiveTab] = useState<TabType>('home');
-  const [subView, setSubView] = useState<'main' | 'booking_detail' | 'invoice' | 'clients' | 'price_list'>('main');
+  
+  // SubView router state
+  const [subView, setSubView] = useState<
+    | 'main' 
+    | 'booking_detail' 
+    | 'invoice' 
+    | 'price_list' 
+    | 'profile' 
+    | 'testimonial' 
+    | 'analytics' 
+    | 'followup' 
+    | 'todo' 
+    | 'notifications' 
+    | 'quick_action_settings'
+  >('main');
 
   const [isDarkMode, setIsDarkMode] = useState(() => {
     return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -143,21 +167,27 @@ const MainApp: React.FC = () => {
   // Helper for title header
   const getPageTitle = () => {
     if (subView === 'booking_detail') return 'Detail Job Acara';
-    if (subView === 'invoice') return 'Invoice Pelunasan';
-    if (subView === 'clients') return 'Daftar Klien & WO';
-    if (subView === 'price_list') return 'Katalog Rate Card';
+    if (subView === 'invoice') return 'Generator Invoice PDF';
+    if (subView === 'price_list') return 'Katalog Rate Card & Price List';
+    if (subView === 'profile') return 'Profil MC Studio';
+    if (subView === 'analytics') return 'Analisis Performa Bisnis';
+    if (subView === 'followup') return 'Pusat Follow Up Klien';
+    if (subView === 'todo') return 'Daftar Tugas To-Do MC';
+    if (subView === 'notifications') return 'Pusat Pengingat';
+    if (subView === 'quick_action_settings') return 'Pengaturan Pintasan FAB';
 
     switch (activeTab) {
-      case 'home': return 'Dashboard Overview';
-      case 'bookings': return 'Jadwal Acara Manggung';
-      case 'daymode': return 'Mode Hari H (Panggung)';
+      case 'home': return 'mcjob.id Dashboard';
+      case 'agenda': return 'Agenda Acara Manggung';
+      case 'clients': return 'Daftar Klien & WO';
       case 'finance': return 'Keuangan & Cashflow';
-      case 'profile': return 'Profil MC Studio';
-      default: return 'MCJobId';
+      case 'more': return 'Lainnya & Hub Bisnis';
+      case 'daymode': return 'Mode Hari H (Panggung)';
+      default: return 'mcjob.id';
     }
   };
 
-  // Render Page Content based on tab & subView
+  // SubView Router
   const renderContent = () => {
     if (subView === 'booking_detail' && selectedBooking) {
       return (
@@ -188,16 +218,6 @@ const MainApp: React.FC = () => {
       );
     }
 
-    if (subView === 'clients') {
-      return (
-        <ClientsPage
-          clients={clients}
-          onSaveClient={handleSaveClient}
-          onDeleteClient={handleDeleteClient}
-        />
-      );
-    }
-
     if (subView === 'price_list') {
       return (
         <PriceListPage
@@ -208,19 +228,58 @@ const MainApp: React.FC = () => {
       );
     }
 
-    // Main Tabs
+    if (subView === 'profile') {
+      return <ProfilePage />;
+    }
+
+    if (subView === 'analytics') {
+      return (
+        <AnalyticsPage
+          bookings={bookings}
+          expenses={expenses}
+          onBack={() => setSubView('main')}
+        />
+      );
+    }
+
+    if (subView === 'followup') {
+      return (
+        <FollowUpPage
+          bookings={bookings}
+          clients={clients}
+          onBack={() => setSubView('main')}
+        />
+      );
+    }
+
+    if (subView === 'todo') {
+      return <TodoPage onBack={() => setSubView('main')} />;
+    }
+
+    if (subView === 'notifications') {
+      return <NotificationPage onBack={() => setSubView('main')} />;
+    }
+
+    if (subView === 'quick_action_settings') {
+      return <QuickActionSettingsPage onBack={() => setSubView('main')} />;
+    }
+
+    // 5 Main Tabs
     switch (activeTab) {
       case 'home':
         return (
           <HomePage
             bookings={bookings}
-            onNavigateTab={(tab) => {
-              if (tab === 'clients') setSubView('clients');
-              else if (tab === 'price_list') setSubView('price_list');
-              else setActiveTab(tab);
+            onNavigateTab={(target) => {
+              if (target === 'price_list' || target === 'testimonial' || target === 'notifications') {
+                setSubView(target);
+              } else {
+                setSubView('main');
+                setActiveTab(target);
+              }
             }}
             onOpenCreateJob={() => {
-              setActiveTab('bookings');
+              setActiveTab('agenda');
             }}
             onOpenBookingDetail={(b) => {
               setSelectedBooking(b);
@@ -233,14 +292,53 @@ const MainApp: React.FC = () => {
           />
         );
 
-      case 'bookings':
+      case 'agenda':
         return (
-          <BookingsPage
+          <AgendaPage
             bookings={bookings}
             onSaveBooking={handleSaveBooking}
             onOpenDetail={(b) => {
               setSelectedBooking(b);
               setSubView('booking_detail');
+            }}
+            onOpenCreateJob={() => {
+              // Open create job modal
+            }}
+          />
+        );
+
+      case 'clients':
+        return (
+          <ClientsPage
+            clients={clients}
+            onSaveClient={handleSaveClient}
+            onDeleteClient={handleDeleteClient}
+          />
+        );
+
+      case 'finance':
+        return (
+          <FinancePage
+            bookings={bookings}
+            expenses={expenses}
+            onSaveExpense={handleSaveExpense}
+            onDeleteExpense={handleDeleteExpense}
+          />
+        );
+
+      case 'more':
+        return (
+          <MorePage
+            onNavigateTab={(target) => {
+              if (target === 'profile' || target === 'price_list' || target === 'analytics' || target === 'followup' || target === 'todo' || target === 'notifications' || target === 'quick_action_settings' || target === 'invoice') {
+                if (target === 'invoice' && bookings.length > 0) {
+                  setSelectedBooking(bookings[0]);
+                }
+                setSubView(target);
+              } else {
+                setSubView('main');
+                setActiveTab(target);
+              }
             }}
           />
         );
@@ -255,26 +353,13 @@ const MainApp: React.FC = () => {
           />
         );
 
-      case 'finance':
-        return (
-          <FinancePage
-            bookings={bookings}
-            expenses={expenses}
-            onSaveExpense={handleSaveExpense}
-            onDeleteExpense={handleDeleteExpense}
-          />
-        );
-
-      case 'profile':
-        return <ProfilePage />;
-
       default:
         return null;
     }
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex text-slate-900 dark:text-slate-100 transition-colors">
+    <div className="min-h-screen bg-[#F8FAFC] dark:bg-slate-900 flex text-[#0F172A] dark:text-slate-100 transition-colors">
       {/* Desktop Sidebar */}
       {activeTab !== 'daymode' && (
         <Sidebar
@@ -285,7 +370,7 @@ const MainApp: React.FC = () => {
           }}
           onOpenCreateJob={() => {
             setSubView('main');
-            setActiveTab('bookings');
+            setActiveTab('agenda');
           }}
           isDarkMode={isDarkMode}
           onToggleDarkMode={() => setIsDarkMode(!isDarkMode)}
@@ -307,7 +392,7 @@ const MainApp: React.FC = () => {
         </main>
       </div>
 
-      {/* Mobile Floating Bottom Nav */}
+      {/* Mobile Floating 5-Tab Bottom Navigation */}
       {activeTab !== 'daymode' && subView === 'main' && (
         <BottomNav
           activeTab={activeTab}
