@@ -10,7 +10,7 @@ interface MorePageProps {
 
 const menuItems = [
   {
-    id: 'price_list',
+    id: 'price-list',
     label: 'Rate Card & Price List',
     desc: 'Kelola paket harga, bagikan ke klien & buat job instan',
     icon: Tag,
@@ -42,7 +42,7 @@ const menuItems = [
     bg: '#F5F3FF',
   },
   {
-    id: 'quick_action_settings',
+    id: 'quick-action',
     label: 'Pintasan Cepat Dasbor',
     desc: 'Kustomisasi tombol melayang & hak akses fitur cepat',
     icon: Zap,

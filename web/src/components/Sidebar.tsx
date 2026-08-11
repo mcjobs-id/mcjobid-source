@@ -4,8 +4,8 @@ import { useAuth } from '../context/AuthContext';
 
 export type TabType = 
   | 'home' | 'agenda' | 'clients' | 'finance' | 'more'
-  | 'daymode' | 'price_list' | 'profile' | 'testimonial'
-  | 'analytics' | 'followup' | 'todo' | 'notifications' | 'quick_action_settings';
+  | 'daymode' | 'price-list' | 'profile' | 'testimonial'
+  | 'analytics' | 'followup' | 'todo' | 'notifications' | 'quick-action';
 
 const mainNavItems = [
   { id: 'home',    label: 'Beranda',        icon: Home },
