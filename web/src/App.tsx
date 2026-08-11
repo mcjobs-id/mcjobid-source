@@ -1,5 +1,5 @@
 import React, { useState, useEffect, createContext, useContext } from 'react';
-import { HashRouter, Routes, Route, Navigate, useNavigate, useLocation, useParams } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation, useParams } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Sidebar, type TabType } from './components/Sidebar';
 import { Navbar } from './components/Navbar';
@@ -49,36 +49,36 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
   const path = location.pathname;
   let activeTab: TabType = 'home';
-  if (path.startsWith('/agenda')) activeTab = 'agenda';
-  if (path.startsWith('/clients')) activeTab = 'clients';
-  if (path.startsWith('/finance')) activeTab = 'finance';
+  if (path.includes('/agenda')) activeTab = 'agenda';
+  if (path.includes('/clients')) activeTab = 'clients';
+  if (path.includes('/finance')) activeTab = 'finance';
   if (
-    path.startsWith('/more') ||
-    path.startsWith('/price-list') ||
-    path.startsWith('/profile') ||
-    path.startsWith('/analytics') ||
-    path.startsWith('/followup') ||
-    path.startsWith('/todo') ||
-    path.startsWith('/notifications') ||
-    path.startsWith('/quick-action') ||
-    path.startsWith('/testimonial')
+    path.includes('/more') ||
+    path.includes('/price-list') ||
+    path.includes('/profile') ||
+    path.includes('/analytics') ||
+    path.includes('/followup') ||
+    path.includes('/todo') ||
+    path.includes('/notifications') ||
+    path.includes('/quick-action') ||
+    path.includes('/testimonial')
   ) activeTab = 'more';
 
-  const isDayMode = path.startsWith('/daymode');
+  const isDayMode = path.includes('/daymode');
   const hideBottomNav = isDayMode;
-  const isSubPage = !['/home', '/agenda', '/clients', '/finance', '/more', '/'].includes(path);
+  const isSubPage = !['/user/home', '/user/agenda', '/user/clients', '/user/finance', '/user/more', '/home', '/agenda', '/clients', '/finance', '/more', '/', '/user'].includes(path);
 
   const getPageTitle = () => {
-    if (path.startsWith('/booking/')) return 'Detail Job Acara';
-    if (path.startsWith('/invoice')) return 'Generator Invoice PDF';
-    if (path.startsWith('/price-list')) return 'Rate Card & Price List';
-    if (path.startsWith('/profile')) return 'Profil MC Studio';
-    if (path.startsWith('/analytics')) return 'Analisis Performa Bisnis';
-    if (path.startsWith('/followup')) return 'Pusat Follow Up Klien';
-    if (path.startsWith('/todo')) return 'Daftar Tugas To-Do';
-    if (path.startsWith('/notifications')) return 'Pengingat & Notifikasi';
-    if (path.startsWith('/quick-action')) return 'Pengaturan Pintasan';
-    if (path.startsWith('/testimonial')) return 'Testimoni Klien';
+    if (path.includes('/booking/')) return 'Detail Job Acara';
+    if (path.includes('/invoice')) return 'Generator Invoice PDF';
+    if (path.includes('/price-list')) return 'Rate Card & Price List';
+    if (path.includes('/profile')) return 'Profil MC Studio';
+    if (path.includes('/analytics')) return 'Analisis Performa Bisnis';
+    if (path.includes('/followup')) return 'Pusat Follow Up Klien';
+    if (path.includes('/todo')) return 'Daftar Tugas To-Do';
+    if (path.includes('/notifications')) return 'Pengingat & Notifikasi';
+    if (path.includes('/quick-action')) return 'Pengaturan Pintasan';
+    if (path.includes('/testimonial')) return 'Testimoni Klien';
     switch (activeTab) {
       case 'home': return 'mcjob.id';
       case 'agenda': return 'Agenda Acara';
@@ -94,7 +94,7 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       {!isDayMode && (
         <Sidebar
           activeTab={activeTab}
-          onChangeTab={(t) => navigate(`/${t}`)}
+          onChangeTab={(t) => navigate(`/user/${t}`)}
           onOpenCreateJob={() => setShowWizardModal(true)}
         />
       )}
@@ -111,7 +111,7 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       {!isDayMode && !hideBottomNav && (
         <BottomNav
           activeTab={activeTab}
-          onChangeTab={(t) => navigate(`/${t}`)}
+          onChangeTab={(t) => navigate(`/user/${t}`)}
         />
       )}
     </div>
@@ -358,31 +358,60 @@ const MainApp: React.FC = () => {
     currentUserId: currentUser.uid,
   };
 
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.hash.startsWith('#/')) {
+      const rawPath = window.location.hash.replace('#/', '');
+      const cleanPath = rawPath.startsWith('user/') ? rawPath : `user/${rawPath}`;
+      window.history.replaceState(null, '', `/${cleanPath}`);
+    }
+  }, []);
+
   return (
-    <HashRouter>
+    <BrowserRouter>
       <ScrollToTop />
       <OutletContext.Provider value={contextValue}>
         <AppLayout>
           <Routes>
-            <Route path="/" element={<Navigate to="/home" replace />} />
-            <Route path="/home" element={<HomePageWrapper />} />
-            <Route path="/agenda" element={<AgendaPageWrapper />} />
-            <Route path="/clients" element={<ClientsPageWrapper />} />
-            <Route path="/finance" element={<FinancePageWrapper />} />
-            <Route path="/more" element={<MorePageWrapper />} />
-            <Route path="/booking/:id" element={<BookingDetailWrapper />} />
-            <Route path="/invoice/:id?" element={<InvoicePageWrapper />} />
-            <Route path="/price-list" element={<PriceListPageWrapper />} />
-            <Route path="/profile" element={<ProfilePageWrapper />} />
-            <Route path="/analytics" element={<AnalyticsPageWrapper />} />
-            <Route path="/followup" element={<FollowUpPageWrapper />} />
-            <Route path="/todo" element={<TodoPageWrapper />} />
-            <Route path="/notifications" element={<NotificationPageWrapper />} />
-            <Route path="/quick-action" element={<QuickActionSettingsPageWrapper />} />
-            <Route path="/testimonial" element={<TestimonialPageWrapper />} />
-            <Route path="/testimonials" element={<TestimonialPageWrapper />} />
-            <Route path="/daymode/:id?" element={<DayModeWrapper />} />
-            <Route path="*" element={<Navigate to="/home" replace />} />
+            {/* Automatic Redirects for root & legacy non-user paths */}
+            <Route path="/" element={<Navigate to="/user/home" replace />} />
+            <Route path="/user" element={<Navigate to="/user/home" replace />} />
+            <Route path="/user/" element={<Navigate to="/user/home" replace />} />
+            <Route path="/home" element={<Navigate to="/user/home" replace />} />
+            <Route path="/agenda" element={<Navigate to="/user/agenda" replace />} />
+            <Route path="/clients" element={<Navigate to="/user/clients" replace />} />
+            <Route path="/finance" element={<Navigate to="/user/finance" replace />} />
+            <Route path="/more" element={<Navigate to="/user/more" replace />} />
+            <Route path="/price-list" element={<Navigate to="/user/price-list" replace />} />
+            <Route path="/profile" element={<Navigate to="/user/profile" replace />} />
+            <Route path="/analytics" element={<Navigate to="/user/analytics" replace />} />
+            <Route path="/followup" element={<Navigate to="/user/followup" replace />} />
+            <Route path="/todo" element={<Navigate to="/user/todo" replace />} />
+            <Route path="/notifications" element={<Navigate to="/user/notifications" replace />} />
+            <Route path="/quick-action" element={<Navigate to="/user/quick-action" replace />} />
+            <Route path="/testimonial" element={<Navigate to="/user/testimonial" replace />} />
+            <Route path="/testimonials" element={<Navigate to="/user/testimonial" replace />} />
+
+            {/* Primary /user Routes */}
+            <Route path="/user/home" element={<HomePageWrapper />} />
+            <Route path="/user/agenda" element={<AgendaPageWrapper />} />
+            <Route path="/user/clients" element={<ClientsPageWrapper />} />
+            <Route path="/user/finance" element={<FinancePageWrapper />} />
+            <Route path="/user/more" element={<MorePageWrapper />} />
+            <Route path="/user/booking/:id" element={<BookingDetailWrapper />} />
+            <Route path="/user/invoice/:id?" element={<InvoicePageWrapper />} />
+            <Route path="/user/price-list" element={<PriceListPageWrapper />} />
+            <Route path="/user/profile" element={<ProfilePageWrapper />} />
+            <Route path="/user/analytics" element={<AnalyticsPageWrapper />} />
+            <Route path="/user/followup" element={<FollowUpPageWrapper />} />
+            <Route path="/user/todo" element={<TodoPageWrapper />} />
+            <Route path="/user/notifications" element={<NotificationPageWrapper />} />
+            <Route path="/user/quick-action" element={<QuickActionSettingsPageWrapper />} />
+            <Route path="/user/testimonial" element={<TestimonialPageWrapper />} />
+            <Route path="/user/testimonials" element={<TestimonialPageWrapper />} />
+            <Route path="/user/daymode/:id?" element={<DayModeWrapper />} />
+
+            {/* Fallback */}
+            <Route path="*" element={<Navigate to="/user/home" replace />} />
           </Routes>
         </AppLayout>
 
@@ -404,7 +433,7 @@ const MainApp: React.FC = () => {
           />
         )}
       </OutletContext.Provider>
-    </HashRouter>
+    </BrowserRouter>
   );
 };
 
@@ -416,10 +445,10 @@ const HomePageWrapper = () => {
   return (
     <HomePage
       bookings={ctx.bookings}
-      onNavigateTab={(t) => navigate(`/${t}`)}
+      onNavigateTab={(t) => navigate(`/user/${t}`)}
       onOpenCreateJob={() => ctx.setShowWizardModal(true)}
-      onOpenBookingDetail={(b) => navigate(`/booking/${b.id}`)}
-      onOpenDayMode={(b) => navigate(`/daymode/${b.id}`)}
+      onOpenBookingDetail={(b) => navigate(`/user/booking/${b.id}`)}
+      onOpenDayMode={(b) => navigate(`/user/daymode/${b.id}`)}
     />
   );
 };
@@ -431,7 +460,7 @@ const AgendaPageWrapper = () => {
     <AgendaPage
       bookings={ctx.bookings}
       onSaveBooking={ctx.handleSaveBooking}
-      onOpenDetail={(b) => navigate(`/booking/${b.id}`)}
+      onOpenDetail={(b) => navigate(`/user/booking/${b.id}`)}
       onOpenCreateJob={() => ctx.setShowWizardModal(true)}
     />
   );
@@ -462,14 +491,14 @@ const FinancePageWrapper = () => {
       onDeletePayment={ctx.handleDeletePayment}
       onSaveBooking={ctx.handleSaveBooking}
       currentUserId={ctx.currentUserId}
-      onOpenBookingDetail={(id) => navigate(`/booking/${id}`)}
+      onOpenBookingDetail={(id) => navigate(`/user/booking/${id}`)}
     />
   );
 };
 
 const MorePageWrapper = () => {
   const navigate = useNavigate();
-  return <MorePage onNavigateTab={(t) => navigate(`/${t}`)} />;
+  return <MorePage onNavigateTab={(t) => navigate(`/user/${t}`)} />;
 };
 
 const BookingDetailWrapper = () => {
@@ -501,8 +530,8 @@ const BookingDetailWrapper = () => {
         await ctx.handleDeleteBooking(bookingId);
         navigate(-1);
       }}
-      onOpenMcDayMode={(b) => navigate(`/daymode/${b.id}`)}
-      onOpenInvoice={(b) => navigate(`/invoice/${b.id}`)}
+      onOpenMcDayMode={(b) => navigate(`/user/daymode/${b.id}`)}
+      onOpenInvoice={(b) => navigate(`/user/invoice/${b.id}`)}
       onSavePayment={ctx.handleSavePayment}
       onDeletePayment={ctx.handleDeletePayment}
       onSaveExpense={ctx.handleSaveExpense}
