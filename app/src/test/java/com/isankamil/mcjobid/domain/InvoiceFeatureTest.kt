@@ -109,14 +109,14 @@ class InvoiceFeatureTest {
 
         val userProfile = UserProfile(
             userId = "u_1",
-            name = "Isan Kamil",
+            displayName = "Isan Kamil",
             email = "isan@mcjob.id",
             phoneNumber = "08123456789",
             specialization = "Wedding & Corporate",
             city = "Jakarta",
             bankName = "Bank Central Asia (BCA)",
-            accountNumber = "1234567890",
-            accountName = "Isan Kamil"
+            bankAccountNumber = "1234567890",
+            bankAccountHolder = "Isan Kamil"
         )
 
         val invoice = Invoice(

@@ -204,6 +204,8 @@ fun LoginScreen(
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                                 shape = RoundedCornerShape(14.dp),
                                 colors = OutlinedTextFieldDefaults.colors(
+                                    focusedTextColor = Color(0xFF0F172A),
+                                    unfocusedTextColor = Color(0xFF0F172A),
                                     focusedBorderColor = Primary,
                                     unfocusedBorderColor = Color(0xFFE2E8F0),
                                     focusedContainerColor = Color(0xFFF8FAFC),
@@ -255,6 +257,8 @@ fun LoginScreen(
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                                 shape = RoundedCornerShape(14.dp),
                                 colors = OutlinedTextFieldDefaults.colors(
+                                    focusedTextColor = Color(0xFF0F172A),
+                                    unfocusedTextColor = Color(0xFF0F172A),
                                     focusedBorderColor = Primary,
                                     unfocusedBorderColor = Color(0xFFE2E8F0),
                                     focusedContainerColor = Color(0xFFF8FAFC),
@@ -504,6 +508,8 @@ fun LoginDialog(
                     singleLine = true,
                     shape = RoundedCornerShape(14.dp),
                     colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = Color(0xFF0F172A),
+                        unfocusedTextColor = Color(0xFF0F172A),
                         focusedBorderColor = Primary,
                         unfocusedBorderColor = Color(0xFFE2E8F0),
                         focusedContainerColor = Color(0xFFF8FAFC),
@@ -538,6 +544,8 @@ fun LoginDialog(
                     singleLine = true,
                     shape = RoundedCornerShape(14.dp),
                     colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = Color(0xFF0F172A),
+                        unfocusedTextColor = Color(0xFF0F172A),
                         focusedBorderColor = Primary,
                         unfocusedBorderColor = Color(0xFFE2E8F0),
                         focusedContainerColor = Color(0xFFF8FAFC),
@@ -676,6 +684,8 @@ fun ResetPasswordDialog(
                     singleLine = true,
                     shape = RoundedCornerShape(14.dp),
                     colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = Color(0xFF0F172A),
+                        unfocusedTextColor = Color(0xFF0F172A),
                         focusedBorderColor = Primary,
                         unfocusedBorderColor = Color(0xFFE2E8F0),
                         focusedContainerColor = Color(0xFFF8FAFC),

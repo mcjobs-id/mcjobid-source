@@ -88,10 +88,6 @@ class HomeViewModel @Inject constructor(
         .map { it[SettingsKeys.QA_RATE_CARD] ?: true }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
 
-    val qaExpenseSimulatorEnabled: StateFlow<Boolean> = context.settingsDataStore.data
-        .map { it[SettingsKeys.QA_EXPENSE_SIMULATOR] ?: true }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
-
     val qaInvoiceEnabled: StateFlow<Boolean> = context.settingsDataStore.data
         .map { it[SettingsKeys.QA_INVOICE] ?: true }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)

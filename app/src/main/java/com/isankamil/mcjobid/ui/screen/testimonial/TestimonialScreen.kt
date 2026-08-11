@@ -201,13 +201,52 @@ fun TestimonialScreen(
                         }
                     }
 
-                    items(testimonials, key = { it.id }) { testimonial ->
-                        val isOwn = currentUserId.isNotBlank() && testimonial.userId == currentUserId
-                        TestimonialItem(
-                            testimonial = testimonial,
-                            isOwn = isOwn,
-                            onEdit = if (isOwn) { { showDialog = true } } else null
-                        )
+                    if (testimonials.isEmpty()) {
+                        item {
+                            Card(
+                                modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+                                shape = RoundedCornerShape(18.dp),
+                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 1.5.dp)
+                            ) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(32.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Star,
+                                        contentDescription = null,
+                                        tint = Primary.copy(alpha = 0.5f),
+                                        modifier = Modifier.size(48.dp)
+                                    )
+                                    Spacer(modifier = Modifier.height(12.dp))
+                                    Text(
+                                        text = "Belum Ada Testimoni",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Primary
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = "Jadilah pengguna pertama yang membagikan ulasan & pengalaman Anda!",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = OnSurfaceVariant,
+                                        textAlign = TextAlign.Center
+                                    )
+                                }
+                            }
+                        }
+                    } else {
+                        items(testimonials, key = { it.id }) { testimonial ->
+                            val isOwn = currentUserId.isNotBlank() && testimonial.userId == currentUserId
+                            TestimonialItem(
+                                testimonial = testimonial,
+                                isOwn = isOwn,
+                                onEdit = if (isOwn) { { showDialog = true } } else null
+                            )
+                        }
                     }
                 }
             }

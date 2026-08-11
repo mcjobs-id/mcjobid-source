@@ -62,7 +62,8 @@ fun AgendaScreen(
                     Text(
                         text = "Semua Job & Agenda",
                         style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.ExtraBold
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Color(0xFF0F172A)
                     )
                 },
                 actions = {
@@ -77,7 +78,11 @@ fun AgendaScreen(
                         Icon(Icons.Default.Add, contentDescription = "Tambah Job", tint = Primary)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White),
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.White,
+                    titleContentColor = Color(0xFF0F172A),
+                    actionIconContentColor = Primary
+                ),
                 windowInsets = TopAppBarDefaults.windowInsets // Explicitly ensure insets are handled
             )
         },

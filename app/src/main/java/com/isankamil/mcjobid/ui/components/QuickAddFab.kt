@@ -34,7 +34,6 @@ fun QuickAddFab(
     onAddExpense: () -> Unit = {},
     onAddReminder: () -> Unit = {},
     onRateCard: () -> Unit = {},
-    onExpenseSimulator: () -> Unit = {},
     onInvoice: () -> Unit = {},
     onAnalytics: () -> Unit = {},
     onNotifications: () -> Unit = {},
@@ -47,7 +46,6 @@ fun QuickAddFab(
     showExpense: Boolean = true,
     showReminder: Boolean = true,
     showRateCard: Boolean = true,
-    showExpenseSimulator: Boolean = true,
     showInvoice: Boolean = true,
     showAnalytics: Boolean = true,
     showNotifications: Boolean = true,
@@ -57,7 +55,7 @@ fun QuickAddFab(
     modifier: Modifier = Modifier
 ) {
     val hasAnyItem = showJob || showClient || showPayment || showExpense ||
-            showReminder || showRateCard || showExpenseSimulator ||
+            showReminder || showRateCard ||
             showInvoice || showAnalytics || showNotifications ||
             showProfile || showSettings || showTodo
 
@@ -121,16 +119,6 @@ fun QuickAddFab(
                     ) {
                         expanded = false
                         onAnalytics()
-                    }
-                }
-                if (showExpenseSimulator) {
-                    SpeedDialItem(
-                        icon = Icons.Default.Calculate,
-                        label = "Simulasi Profit",
-                        iconColor = Color(0xFF0891B2)
-                    ) {
-                        expanded = false
-                        onExpenseSimulator()
                     }
                 }
                 if (showRateCard) {

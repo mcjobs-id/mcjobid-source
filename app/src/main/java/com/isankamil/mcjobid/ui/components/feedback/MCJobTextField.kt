@@ -136,6 +136,8 @@ fun MCJobTextField(
             leadingIcon = leadingIcon,
             trailingIcon = trailingIcon,
             colors = OutlinedTextFieldDefaults.colors(
+                focusedTextColor = Color(0xFF0F172A),
+                unfocusedTextColor = Color(0xFF0F172A),
                 focusedBorderColor = Primary,
                 unfocusedBorderColor = Color(0xFFCBD5E1),
                 errorBorderColor = Error,
@@ -144,7 +146,7 @@ fun MCJobTextField(
                 errorContainerColor = Error.copy(alpha = 0.04f),
                 disabledContainerColor = Color(0xFFF8FAFC),
                 disabledBorderColor = Color(0xFFE2E8F0),
-                disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                disabledTextColor = Color(0xFF64748B),
                 focusedLabelColor = Primary,
                 unfocusedLabelColor = OnSurfaceVariant
             )

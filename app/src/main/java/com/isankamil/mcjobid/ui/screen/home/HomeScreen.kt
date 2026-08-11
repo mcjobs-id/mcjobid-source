@@ -62,7 +62,6 @@ fun HomeScreen(
     onMcDayModeClick: (String) -> Unit,
     onTestimonialClick: () -> Unit,
     onPriceListClick: () -> Unit,
-    onSimulatorClick: () -> Unit,
     onAnalyticsClick: () -> Unit = {},
     onSettingsClick: () -> Unit = {},
     onQuickActionSettingsClick: () -> Unit = {},
@@ -88,7 +87,6 @@ fun HomeScreen(
     val qaAddExpenseEnabled by viewModel.qaAddExpenseEnabled.collectAsState()
     val qaReminderEnabled by viewModel.qaReminderEnabled.collectAsState()
     val qaRateCardEnabled by viewModel.qaRateCardEnabled.collectAsState()
-    val qaExpenseSimulatorEnabled by viewModel.qaExpenseSimulatorEnabled.collectAsState()
     val qaInvoiceEnabled by viewModel.qaInvoiceEnabled.collectAsState()
     val qaAnalyticsEnabled by viewModel.qaAnalyticsEnabled.collectAsState()
     val qaNotificationsEnabled by viewModel.qaNotificationsEnabled.collectAsState()
@@ -159,13 +157,11 @@ fun HomeScreen(
                 )
             }
 
-            // 4 CTA Shortcut Cards: Testimoni, Bantuan, Rate Card (Biru), & Simulasi Profit (Ungu)
+            // 2 CTA Shortcut Cards: Testimoni & Bantuan Kendala
             item {
                 TopQuickFilterChipsSurface(
                     onTestimonialClick = onTestimonialClick,
                     onSupportClick = { showSupportDialog = true },
-                    onPriceListClick = onPriceListClick,
-                    onSimulatorClick = onSimulatorClick,
                     modifier = Modifier.padding(horizontal = 16.dp)
                 )
             }
@@ -375,7 +371,6 @@ fun HomeScreen(
                 onAddExpense = onAddExpenseClick,
                 onAddReminder = onAddReminderClick,
                 onRateCard = onPriceListClick,
-                onExpenseSimulator = onSimulatorClick,
                 onInvoice = onCreateInvoiceClick,
                 onAnalytics = onAnalyticsClick,
                 onNotifications = onNotificationClick,
@@ -388,7 +383,6 @@ fun HomeScreen(
                 showExpense = qaAddExpenseEnabled,
                 showReminder = qaReminderEnabled,
                 showRateCard = qaRateCardEnabled,
-                showExpenseSimulator = qaExpenseSimulatorEnabled,
                 showInvoice = qaInvoiceEnabled,
                 showAnalytics = qaAnalyticsEnabled,
                 showNotifications = qaNotificationsEnabled,
@@ -1212,8 +1206,6 @@ fun ReminderItemCard(
 fun TopQuickFilterChipsSurface(
     onTestimonialClick: () -> Unit,
     onSupportClick: () -> Unit,
-    onPriceListClick: () -> Unit,
-    onSimulatorClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Surface(
@@ -1222,143 +1214,70 @@ fun TopQuickFilterChipsSurface(
         color = Color.White,
         shadowElevation = 1.dp
     ) {
-        Column(
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(10.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            // Row 1: Testimoni & Saran (Ungu Selaras Primary) + Bantuan Kendala (Ungu Selaras Primary)
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                verticalAlignment = Alignment.CenterVertically
+            // CTA 1: Testimoni (Ungu Primary)
+            Surface(
+                modifier = Modifier
+                    .weight(1f)
+                    .clickable { onTestimonialClick() },
+                shape = RoundedCornerShape(12.dp),
+                color = Color(0xFFEEF2FF), // Soft Indigo/Purple Background (Aligned with Primary)
+                border = BorderStroke(1.dp, Color(0xFFC7D2FE)) // Soft Indigo Border
             ) {
-                // CTA 1: Testimoni (Ungu Primary)
-                Surface(
-                    modifier = Modifier
-                        .weight(1f)
-                        .clickable { onTestimonialClick() },
-                    shape = RoundedCornerShape(12.dp),
-                    color = Color(0xFFEEF2FF), // Soft Indigo/Purple Background (Aligned with Primary)
-                    border = BorderStroke(1.dp, Color(0xFFC7D2FE)) // Soft Indigo Border
+                Row(
+                    modifier = Modifier.padding(vertical = 10.dp, horizontal = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
                 ) {
-                    Row(
-                        modifier = Modifier.padding(vertical = 10.dp, horizontal = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.RateReview,
-                            contentDescription = "Testimoni",
-                            tint = Primary,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "Testimoni & Saran",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = PrimaryDark
-                        )
-                    }
-                }
-
-                // CTA 2: Bantuan Kendala (Ungu Primary)
-                Surface(
-                    modifier = Modifier
-                        .weight(1f)
-                        .clickable { onSupportClick() },
-                    shape = RoundedCornerShape(12.dp),
-                    color = Color(0xFFEEF2FF), // Soft Indigo/Purple Background (Aligned with Primary)
-                    border = BorderStroke(1.dp, Color(0xFFC7D2FE)) // Soft Indigo Border
-                ) {
-                    Row(
-                        modifier = Modifier.padding(vertical = 10.dp, horizontal = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.HelpOutline,
-                            contentDescription = "Bantuan Kendala",
-                            tint = Primary,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "Bantuan Kendala",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = PrimaryDark
-                        )
-                    }
+                    Icon(
+                        imageVector = Icons.Default.RateReview,
+                        contentDescription = "Testimoni",
+                        tint = Primary,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Testimoni & Saran",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = PrimaryDark
+                    )
                 }
             }
 
-            // Row 2: Katalog Rate Card (Biru) + Simulasi Profit (Ungu Selaras Primary)
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                verticalAlignment = Alignment.CenterVertically
+            // CTA 2: Bantuan Kendala (Ungu Primary)
+            Surface(
+                modifier = Modifier
+                    .weight(1f)
+                    .clickable { onSupportClick() },
+                shape = RoundedCornerShape(12.dp),
+                color = Color(0xFFEEF2FF), // Soft Indigo/Purple Background (Aligned with Primary)
+                border = BorderStroke(1.dp, Color(0xFFC7D2FE)) // Soft Indigo Border
             ) {
-                // CTA 3: Katalog Rate Card (Biru)
-                Surface(
-                    modifier = Modifier
-                        .weight(1f)
-                        .clickable { onPriceListClick() },
-                    shape = RoundedCornerShape(12.dp),
-                    color = Color(0xFFEFF6FF), // Soft Blue Background
-                    border = BorderStroke(1.dp, Color(0xFFBFDBFE)) // Soft Blue Border
+                Row(
+                    modifier = Modifier.padding(vertical = 10.dp, horizontal = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
                 ) {
-                    Row(
-                        modifier = Modifier.padding(vertical = 10.dp, horizontal = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Sell,
-                            contentDescription = "Katalog Rate Card",
-                            tint = Color(0xFF2563EB),
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "Katalog Rate Card",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF1E40AF)
-                        )
-                    }
-                }
-
-                // CTA 4: Simulasi Profit (Ungu Primary)
-                Surface(
-                    modifier = Modifier
-                        .weight(1f)
-                        .clickable { onSimulatorClick() },
-                    shape = RoundedCornerShape(12.dp),
-                    color = Color(0xFFEEF2FF), // Soft Indigo/Purple Background (Aligned with Primary)
-                    border = BorderStroke(1.dp, Color(0xFFC7D2FE)) // Soft Indigo Border
-                ) {
-                    Row(
-                        modifier = Modifier.padding(vertical = 10.dp, horizontal = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Calculate,
-                            contentDescription = "Simulasi Profit",
-                            tint = Primary,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "Simulasi Profit",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = PrimaryDark
-                        )
-                    }
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.HelpOutline,
+                        contentDescription = "Bantuan Kendala",
+                        tint = Primary,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Bantuan Kendala",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = PrimaryDark
+                    )
                 }
             }
         }

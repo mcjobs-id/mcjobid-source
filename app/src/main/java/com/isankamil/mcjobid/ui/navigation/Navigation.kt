@@ -46,8 +46,6 @@ import com.isankamil.mcjobid.ui.screen.pricelist.AddEditRateCardScreen
 import com.isankamil.mcjobid.ui.screen.pricelist.AddEditRateCardViewModel
 import com.isankamil.mcjobid.ui.screen.pricelist.PriceListScreen
 import com.isankamil.mcjobid.ui.screen.pricelist.PriceListViewModel
-import com.isankamil.mcjobid.ui.screen.simulator.ExpenseSimulatorScreen
-import com.isankamil.mcjobid.ui.screen.simulator.ExpenseSimulatorViewModel
 import com.isankamil.mcjobid.ui.screen.splash.SplashScreen
 import com.isankamil.mcjobid.util.Constants
 
@@ -72,7 +70,6 @@ sealed class Screen(val route: String) {
         fun createRoute(rateCardId: String? = null) =
             if (rateCardId != null) "add_edit_rate_card?rateCardId=$rateCardId" else "add_edit_rate_card"
     }
-    object ExpenseSimulator : Screen("expense_simulator")
     object QuickActionSettings : Screen("quick_action_settings")
     object Todo : Screen("todo")
 
@@ -272,9 +269,6 @@ fun McJobIdNavigation(
                 },
                 onNavigateToPriceList = {
                     navController.navigate(Screen.PriceList.route)
-                },
-                onNavigateToSimulator = {
-                    navController.navigate(Screen.ExpenseSimulator.route)
                 },
                 onNavigateToAnalytics = {
                     navController.navigate(Screen.Analytics.route)
@@ -510,14 +504,6 @@ fun McJobIdNavigation(
                 viewModel = viewModel,
                 onBackClick = { navController.popBackStack() },
                 onSaveSuccess = { navController.popBackStack() }
-            )
-        }
-
-        composable(Screen.ExpenseSimulator.route) {
-            val viewModel: ExpenseSimulatorViewModel = hiltViewModel()
-            ExpenseSimulatorScreen(
-                viewModel = viewModel,
-                onBackClick = { navController.popBackStack() }
             )
         }
     }

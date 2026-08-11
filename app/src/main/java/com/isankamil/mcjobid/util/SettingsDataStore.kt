@@ -29,7 +29,6 @@ object SettingsKeys {
     val QA_ADD_EXPENSE = booleanPreferencesKey("qa_add_expense")
     val QA_REMINDER = booleanPreferencesKey("qa_reminder")
     val QA_RATE_CARD = booleanPreferencesKey("qa_rate_card")
-    val QA_EXPENSE_SIMULATOR = booleanPreferencesKey("qa_expense_simulator")
     val QA_INVOICE = booleanPreferencesKey("qa_invoice")
     val QA_ANALYTICS = booleanPreferencesKey("qa_analytics")
     val QA_NOTIFICATIONS = booleanPreferencesKey("qa_notifications")

@@ -36,7 +36,6 @@ fun QuickActionSettingsScreen(
     val qaAddExpenseEnabled by viewModel.qaAddExpenseEnabled.collectAsState()
     val qaReminderEnabled by viewModel.qaReminderEnabled.collectAsState()
     val qaRateCardEnabled by viewModel.qaRateCardEnabled.collectAsState()
-    val qaExpenseSimulatorEnabled by viewModel.qaExpenseSimulatorEnabled.collectAsState()
     val qaInvoiceEnabled by viewModel.qaInvoiceEnabled.collectAsState()
     val qaAnalyticsEnabled by viewModel.qaAnalyticsEnabled.collectAsState()
     val qaNotificationsEnabled by viewModel.qaNotificationsEnabled.collectAsState()
@@ -46,7 +45,7 @@ fun QuickActionSettingsScreen(
 
     val allStates = listOf(
         qaAddJobEnabled, qaAddClientEnabled, qaAddPaymentEnabled, qaAddExpenseEnabled,
-        qaReminderEnabled, qaRateCardEnabled, qaExpenseSimulatorEnabled, qaInvoiceEnabled,
+        qaReminderEnabled, qaRateCardEnabled, qaInvoiceEnabled,
         qaAnalyticsEnabled, qaNotificationsEnabled, qaProfileEnabled, qaSettingsEnabled,
         qaTodoEnabled
     )
@@ -302,9 +301,9 @@ fun QuickActionSettingsScreen(
                     }
                 }
 
-                // 3. Kategori: Simulasi & Analisis Performa
+                // 3. Kategori: Rate Card & Analisis Performa
                 item {
-                    CategoryHeader(title = "SIMULASI HARGA & ANALISIS")
+                    CategoryHeader(title = "RATE CARD & ANALISIS")
                 }
                 item {
                     Card(
@@ -319,15 +318,6 @@ fun QuickActionSettingsScreen(
                                 subtitle = "Katalog paket harga MC & bagikan rincian ke calon klien",
                                 isChecked = qaRateCardEnabled,
                                 onCheckedChange = { viewModel.setQaRateCardEnabled(it) }
-                            )
-                            HorizontalDivider(color = SurfaceVariant)
-                            QuickActionRow(
-                                icon = Icons.Default.Calculate,
-                                iconBg = Color(0xFF0891B2),
-                                title = "Kalkulator Profit & Biaya Job",
-                                subtitle = "Simulasi margin keuntungan, transport luar kota, & akomodasi",
-                                isChecked = qaExpenseSimulatorEnabled,
-                                onCheckedChange = { viewModel.setQaExpenseSimulatorEnabled(it) }
                             )
                             HorizontalDivider(color = SurfaceVariant)
                             QuickActionRow(

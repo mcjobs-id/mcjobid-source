@@ -1,5 +1,6 @@
 package com.isankamil.mcjobid.ui.components.feedback
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -97,8 +98,10 @@ fun MCJobSecondaryButton(
         shape = RoundedCornerShape(14.dp),
         contentPadding = contentPadding,
         colors = ButtonDefaults.outlinedButtonColors(
-            contentColor = MaterialTheme.colorScheme.onSurface
-        )
+            contentColor = Color(0xFF334155),
+            disabledContentColor = Color(0xFF94A3B8)
+        ),
+        border = BorderStroke(1.dp, Color(0xFFCBD5E1))
     ) {
         if (icon != null) {
             Icon(icon, contentDescription = null, modifier = Modifier.size(18.dp))

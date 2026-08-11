@@ -117,10 +117,6 @@ class SettingsViewModel @Inject constructor(
         .map { it[SettingsKeys.QA_RATE_CARD] ?: true }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
 
-    val qaExpenseSimulatorEnabled: StateFlow<Boolean> = context.settingsDataStore.data
-        .map { it[SettingsKeys.QA_EXPENSE_SIMULATOR] ?: true }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
-
     val qaInvoiceEnabled: StateFlow<Boolean> = context.settingsDataStore.data
         .map { it[SettingsKeys.QA_INVOICE] ?: true }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
@@ -456,10 +452,6 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { context.settingsDataStore.edit { it[SettingsKeys.QA_RATE_CARD] = enabled } }
     }
 
-    fun setQaExpenseSimulatorEnabled(enabled: Boolean) {
-        viewModelScope.launch { context.settingsDataStore.edit { it[SettingsKeys.QA_EXPENSE_SIMULATOR] = enabled } }
-    }
-
     fun setQaInvoiceEnabled(enabled: Boolean) {
         viewModelScope.launch { context.settingsDataStore.edit { it[SettingsKeys.QA_INVOICE] = enabled } }
     }
@@ -493,7 +485,6 @@ class SettingsViewModel @Inject constructor(
                 it[SettingsKeys.QA_ADD_EXPENSE] = enabled
                 it[SettingsKeys.QA_REMINDER] = enabled
                 it[SettingsKeys.QA_RATE_CARD] = enabled
-                it[SettingsKeys.QA_EXPENSE_SIMULATOR] = enabled
                 it[SettingsKeys.QA_INVOICE] = enabled
                 it[SettingsKeys.QA_ANALYTICS] = enabled
                 it[SettingsKeys.QA_NOTIFICATIONS] = enabled

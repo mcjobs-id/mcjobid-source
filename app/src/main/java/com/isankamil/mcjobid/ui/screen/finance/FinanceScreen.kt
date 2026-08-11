@@ -86,7 +86,8 @@ fun FinanceScreen(
                         Text(
                             text = "Utang & Piutang",
                             style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.ExtraBold
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color(0xFF0F172A)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         MCJobInfoTooltip(tooltipText = "Pusat pemantauan sisa piutang klien, utang & pengeluaran operasional vendor, dan arus kas honor MC.")

@@ -32,7 +32,6 @@ import com.isankamil.mcjobid.ui.theme.*
 fun MoreScreen(
     onProfileClick: () -> Unit,
     onPriceListClick: () -> Unit,
-    onSimulatorClick: () -> Unit,
     onInvoiceClick: () -> Unit,
     onNotificationClick: () -> Unit,
     onAnalyticsClick: () -> Unit,
@@ -124,7 +123,7 @@ fun MoreScreen(
                 }
             }
 
-            // Semua menu dalam satu Card — Rate Card, Simulasi, & Analisis
+            // Semua menu dalam satu Card — Rate Card, Analisis, & Follow Up
             item {
                 Card(
                     shape = RoundedCornerShape(20.dp),
@@ -136,13 +135,6 @@ fun MoreScreen(
                             title = "Rate Card & Price List",
                             subtitle = "Kelola paket harga MC, bagikan ke klien & buat job instan",
                             onClick = onPriceListClick
-                        )
-                        HorizontalDivider(color = SurfaceVariant)
-                        MoreMenuItem(
-                            icon = Icons.Default.Calculate,
-                            title = "Simulasi Profit & Biaya Job",
-                            subtitle = "Kalkulator estimasi pengeluaran, transport, & margin laba",
-                            onClick = onSimulatorClick
                         )
                         HorizontalDivider(color = SurfaceVariant)
                         MoreMenuItem(
