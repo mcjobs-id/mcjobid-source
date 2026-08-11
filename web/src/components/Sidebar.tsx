@@ -66,7 +66,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <button
               key={id}
               onClick={() => onChangeTab(id as TabType)}
-              className={`sidebar-link ${isActive ? 'active' : ''}`}
+              className={`nav-item ${isActive ? 'active' : ''}`}
             >
               <Icon size={17} />
               <span>{label}</span>
