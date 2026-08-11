@@ -48,6 +48,7 @@ export const Navbar: React.FC<NavbarProps> = ({ isDarkMode, onToggleDarkMode, ti
 
         {/* Notification bell */}
         <button
+          onClick={() => navigate('/notifications')}
           className="btn btn-ghost btn-sm"
           style={{width:'36px', padding:0, position:'relative', display:'flex', alignItems:'center', justifyContent:'center'}}
           aria-label="Notifikasi"
