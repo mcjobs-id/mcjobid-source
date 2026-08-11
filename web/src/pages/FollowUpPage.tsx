@@ -109,23 +109,25 @@ export const FollowUpPage: React.FC<FollowUpPageProps> = ({ onBack, bookings, cl
           />
         </div>
 
-        <div style={{display:'flex', gap:'8px'}}>
+        <div style={{display:'flex', gap:'8px', overflowX:'auto', paddingBottom:'4px', width:'100%'}} className="scrollbar-none">
           <button
             onClick={() => setActiveTab('ALL')}
             className={`btn btn-sm ${activeTab === 'ALL' ? 'btn-primary' : 'btn-secondary'}`}
+            style={{whiteSpace:'nowrap', flexShrink:0}}
           >
             Semua Follow Up ({followUpTargets.length})
           </button>
           <button
             onClick={() => setActiveTab('PAYMENT')}
             className={`btn btn-sm ${activeTab === 'PAYMENT' ? 'btn-primary' : 'btn-secondary'}`}
-            style={{background: activeTab === 'PAYMENT' ? 'var(--error)' : undefined, borderColor: activeTab === 'PAYMENT' ? 'var(--error)' : undefined}}
+            style={{background: activeTab === 'PAYMENT' ? 'var(--error)' : undefined, borderColor: activeTab === 'PAYMENT' ? 'var(--error)' : undefined, whiteSpace:'nowrap', flexShrink:0}}
           >
             <DollarSign size={13} /> Sisa Pembayaran / Piutang
           </button>
           <button
             onClick={() => setActiveTab('EVENT')}
             className={`btn btn-sm ${activeTab === 'EVENT' ? 'btn-primary' : 'btn-secondary'}`}
+            style={{whiteSpace:'nowrap', flexShrink:0}}
           >
             <Calendar size={13} /> Konfirmasi H-7 Acara
           </button>
