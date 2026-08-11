@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { ArrowLeft, CheckSquare, Plus, Trash2, Sparkles, Filter, AlertCircle, Calendar, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, CheckSquare, Plus, Trash2, Sparkles, Filter, AlertCircle, Calendar, CheckCircle2, Save } from 'lucide-react';
 import type { TodoItem } from '../types';
 import { useAuth } from '../context/AuthContext';
-import { Modal } from '../components/Modal';
 
 interface TodoPageProps {
   todos: TodoItem[];
@@ -25,12 +24,14 @@ const PREDEFINED_MC_TEMPLATES: Omit<TodoItem, 'id' | 'ownerId'>[] = [
 export const TodoPage: React.FC<TodoPageProps> = ({ todos, onSaveTodo, onDeleteTodo, onBack }) => {
   const { currentUser } = useAuth();
   
+  // Page view mode: 'list' or 'form' (Dedicated Full Page Form View)
+  const [viewMode, setViewMode] = useState<'list' | 'form'>('list');
+
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('SEMUA');
   const [selectedStatus, setSelectedStatus] = useState<'ALL' | 'PENDING' | 'DONE'>('ALL');
 
-  // Modal State
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  // Form State
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState<'PERSIAPAN' | 'HARI_H' | 'PASCA_EVENT' | 'KARIER' | 'UMUM'>('PERSIAPAN');
   const [priority, setPriority] = useState<'TINGGI' | 'SEDANG' | 'RENDAH'>('SEDANG');
@@ -55,7 +56,7 @@ export const TodoPage: React.FC<TodoPageProps> = ({ todos, onSaveTodo, onDeleteT
       await onSaveTodo(newTodo);
       setTitle('');
       setNotes('');
-      setIsModalOpen(false);
+      setViewMode('list');
     } catch (err) {
       console.error(err);
     } finally {
@@ -123,6 +124,96 @@ export const TodoPage: React.FC<TodoPageProps> = ({ todos, onSaveTodo, onDeleteT
     }
   };
 
+  // ── DEDICATED FORM PAGE VIEW (TAMBAH TUGAS FULL SCREEN) ──
+  if (viewMode === 'form') {
+    return (
+      <div className="animate-fade-in" style={{maxWidth:'800px', margin:'0 auto', paddingBottom:'32px'}}>
+        <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'24px'}}>
+          <div style={{display:'flex', alignItems:'center', gap:'12px'}}>
+            <button onClick={() => setViewMode('list')} className="btn btn-ghost" style={{padding:'0 8px', marginLeft:'-8px'}}>
+              <ArrowLeft size={18} />
+            </button>
+            <div>
+              <h1 className="page-title">Tambah Tugas MC Baru</h1>
+              <p className="page-subtitle">Buat checklist tugas operasional perform atau karier MC Anda.</p>
+            </div>
+          </div>
+          <button onClick={() => setViewMode('list')} className="btn btn-secondary btn-sm">
+            Batal
+          </button>
+        </div>
+
+        <form onSubmit={handleAdd} style={{display:'flex', flexDirection:'column', gap:'20px'}}>
+          <div className="card" style={{padding:'24px', display:'flex', flexDirection:'column', gap:'16px'}}>
+            <div>
+              <label className="input-label">Judul / Detail Tugas *</label>
+              <input 
+                type="text" 
+                required 
+                value={title} 
+                onChange={e => setTitle(e.target.value)} 
+                className="input-field" 
+                placeholder="Contoh: Fitting Dresscode H-3 di Designer" 
+              />
+            </div>
+
+            <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(240px, 1fr))', gap:'16px'}}>
+              <div>
+                <label className="input-label">Kategori Tugas</label>
+                <select value={category} onChange={e => setCategory(e.target.value as any)} className="input-field">
+                  <option value="PERSIAPAN">Persiapan Event 🎯</option>
+                  <option value="HARI_H">Hari-H Acara 🎤</option>
+                  <option value="PASCA_EVENT">Pasca Acara 💼</option>
+                  <option value="KARIER">Karier & Portofolio 🚀</option>
+                  <option value="UMUM">Catatan Umum 📝</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="input-label">Skala Prioritas</label>
+                <select value={priority} onChange={e => setPriority(e.target.value as any)} className="input-field">
+                  <option value="TINGGI">Tinggi (High) 🚨</option>
+                  <option value="SEDANG">Sedang (Medium) ⚡</option>
+                  <option value="RENDAH">Rendah (Low) ☕</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="input-label">Catatan Tambahan (Optional)</label>
+              <textarea 
+                value={notes} 
+                onChange={e => setNotes(e.target.value)} 
+                className="input-field" 
+                style={{height:'80px', padding:'12px', resize:'vertical'}}
+                placeholder="Catatan kecil atau kontak penanggung jawab..." 
+              />
+            </div>
+          </div>
+
+          <div style={{display:'flex', gap:'12px'}}>
+            <button 
+              type="button" 
+              onClick={() => setViewMode('list')} 
+              className="btn btn-secondary btn-full btn-lg"
+            >
+              Batal
+            </button>
+            <button 
+              type="submit" 
+              disabled={saving} 
+              className="btn btn-primary btn-full btn-lg" 
+              style={{background:'#7C3AED', borderColor:'#7C3AED'}}
+            >
+              <Save size={16} /> {saving ? 'Menyimpan Tugas...' : 'Simpan Tugas 🚀'}
+            </button>
+          </div>
+        </form>
+      </div>
+    );
+  }
+
+  // ── LIST VIEW ──
   return (
     <div className="animate-fade-in" style={{maxWidth:'850px', margin:'0 auto', paddingBottom:'32px'}}>
       
@@ -140,11 +231,11 @@ export const TodoPage: React.FC<TodoPageProps> = ({ todos, onSaveTodo, onDeleteT
           </div>
         </div>
 
-        <div style={{display:'flex', gap:'8px'}}>
+        <div style={{display:'flex', gap:'8px', flexWrap:'wrap'}}>
           <button onClick={handleApplyTemplates} className="btn btn-secondary btn-sm" style={{color:'#7C3AED', borderColor:'#7C3AED'}}>
             <Sparkles size={14} /> Template MC 🚀
           </button>
-          <button onClick={() => setIsModalOpen(true)} className="btn btn-primary btn-sm" style={{background:'#7C3AED', borderColor:'#7C3AED'}}>
+          <button onClick={() => setViewMode('form')} className="btn btn-primary btn-sm" style={{background:'#7C3AED', borderColor:'#7C3AED'}}>
             <Plus size={14} /> Tambah Tugas
           </button>
         </div>
@@ -184,30 +275,32 @@ export const TodoPage: React.FC<TodoPageProps> = ({ todos, onSaveTodo, onDeleteT
 
       {/* ── FILTERS & STATUS TABS ── */}
       <div style={{display:'flex', flexDirection:'column', gap:'12px', marginBottom:'20px'}}>
-        <div style={{display:'flex', gap:'8px', overflowX:'auto'}}>
+        <div style={{display:'flex', gap:'8px', overflowX:'auto', width:'100%'}} className="scrollbar-none">
           <button
             onClick={() => setSelectedStatus('ALL')}
             className={`btn btn-sm ${selectedStatus === 'ALL' ? 'btn-primary' : 'btn-secondary'}`}
-            style={{background: selectedStatus === 'ALL' ? '#7C3AED' : undefined, borderColor: selectedStatus === 'ALL' ? '#7C3AED' : undefined}}
+            style={{background: selectedStatus === 'ALL' ? '#7C3AED' : undefined, borderColor: selectedStatus === 'ALL' ? '#7C3AED' : undefined, whiteSpace:'nowrap', flexShrink:0}}
           >
             Semua ({totalCount})
           </button>
           <button
             onClick={() => setSelectedStatus('PENDING')}
             className={`btn btn-sm ${selectedStatus === 'PENDING' ? 'btn-primary' : 'btn-secondary'}`}
+            style={{whiteSpace:'nowrap', flexShrink:0}}
           >
             Tertunda ({pendingCount})
           </button>
           <button
             onClick={() => setSelectedStatus('DONE')}
             className={`btn btn-sm ${selectedStatus === 'DONE' ? 'btn-primary' : 'btn-secondary'}`}
+            style={{whiteSpace:'nowrap', flexShrink:0}}
           >
             Selesai ({completedCount})
           </button>
         </div>
 
-        {/* Category Filter Chips */}
-        <div style={{display:'flex', gap:'6px', overflowX:'auto'}}>
+        {/* Category Filter Chips (Responsive Scroll) */}
+        <div style={{display:'flex', gap:'6px', overflowX:'auto', width:'100%', paddingBottom:'4px'}} className="scrollbar-none">
           {[
             { id: 'SEMUA', label: 'Semua Kategori' },
             { id: 'PERSIAPAN', label: 'Persiapan Event' },
@@ -222,7 +315,8 @@ export const TodoPage: React.FC<TodoPageProps> = ({ todos, onSaveTodo, onDeleteT
               style={{
                 cursor:'pointer', padding:'6px 12px', fontSize:'12px', borderRadius:'9999px',
                 border: selectedCategory === c.id ? 'none' : '1px solid var(--border)',
-                background: selectedCategory === c.id ? '#7C3AED' : 'var(--bg-surface)'
+                background: selectedCategory === c.id ? '#7C3AED' : 'var(--bg-surface)',
+                whiteSpace:'nowrap', flexShrink:0
               }}
             >
               {c.label}
@@ -302,65 +396,6 @@ export const TodoPage: React.FC<TodoPageProps> = ({ todos, onSaveTodo, onDeleteT
           ))
         )}
       </div>
-
-      {/* ── MODAL ADD TASK ── */}
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Tambah Tugas MC Baru">
-        <form onSubmit={handleAdd} style={{display:'flex', flexDirection:'column', gap:'16px'}}>
-          <div>
-            <label className="input-label">Judul / Detail Tugas *</label>
-            <input 
-              type="text" 
-              required 
-              value={title} 
-              onChange={e => setTitle(e.target.value)} 
-              className="input-field" 
-              placeholder="Contoh: Fitting Dresscode H-3" 
-            />
-          </div>
-
-          <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px'}}>
-            <div>
-              <label className="input-label">Kategori</label>
-              <select value={category} onChange={e => setCategory(e.target.value as any)} className="input-field">
-                <option value="PERSIAPAN">Persiapan Event 🎯</option>
-                <option value="HARI_H">Hari-H Acara 🎤</option>
-                <option value="PASCA_EVENT">Pasca Acara 💼</option>
-                <option value="KARIER">Karier & Portofolio 🚀</option>
-                <option value="UMUM">Catatan Umum 📝</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="input-label">Skala Prioritas</label>
-              <select value={priority} onChange={e => setPriority(e.target.value as any)} className="input-field">
-                <option value="TINGGI">Tinggi (High) 🚨</option>
-                <option value="SEDANG">Sedang (Medium) ⚡</option>
-                <option value="RENDAH">Rendah (Low) ☕</option>
-              </select>
-            </div>
-          </div>
-
-          <div>
-            <label className="input-label">Catatan Tambahan (Optional)</label>
-            <input 
-              type="text" 
-              value={notes} 
-              onChange={e => setNotes(e.target.value)} 
-              className="input-field" 
-              placeholder="Catatan kecil teknis..." 
-            />
-          </div>
-
-          <button 
-            type="submit" 
-            disabled={saving} 
-            className="btn btn-primary btn-full btn-lg" 
-            style={{background:'#7C3AED', borderColor:'#7C3AED', marginTop:'8px'}}
-          >
-            {saving ? 'Menyimpan...' : 'Simpan Tugas 🚀'}
-          </button>
-        </form>
-      </Modal>
 
     </div>
   );
