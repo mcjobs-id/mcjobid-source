@@ -20,12 +20,96 @@ import type {
   ChecklistItem
 } from '../types';
 
+// Helper to normalize Booking object fields so components never see undefined
+const normalizeBooking = (raw: any): Booking => {
+  const eventTitle = raw.eventTitle || raw.name || raw.clientName || raw.client || 'Acara MC';
+  const name = raw.name || eventTitle;
+  const clientName = raw.clientName || raw.client || 'Klien';
+  const client = raw.client || clientName;
+  const eventDate = raw.eventDate || raw.date || new Date().toISOString().split('T')[0];
+  const date = raw.date || eventDate;
+  const eventTime = raw.eventTime || raw.start || '';
+  const start = raw.start || eventTime;
+  const venue = raw.venue || raw.loc || '';
+  const loc = raw.loc || venue;
+  const totalFee = Number(raw.totalFee ?? raw.fee ?? 0);
+  const fee = Number(raw.fee ?? totalFee);
+  const dpAmount = Number(raw.dpAmount ?? raw.dp ?? 0);
+  const dp = Number(raw.dp ?? dpAmount);
+  
+  let paymentStatus = raw.paymentStatus;
+  if (!paymentStatus) {
+    if (totalFee > 0 && dpAmount >= totalFee) paymentStatus = 'PAID';
+    else if (dpAmount > 0) paymentStatus = 'PARTIAL';
+    else paymentStatus = 'UNPAID';
+  }
+  paymentStatus = paymentStatus.toUpperCase();
+
+  const notes = raw.notes || raw.note || '';
+  const note = raw.note || notes;
+  const status = raw.status || 'CONFIRMED';
+
+  return {
+    ...raw,
+    id: raw.id,
+    ownerId: raw.ownerId || '',
+    eventTitle,
+    name,
+    clientName,
+    client,
+    category: raw.category || 'Wedding',
+    eventDate,
+    date,
+    eventTime,
+    start,
+    venue,
+    loc,
+    totalFee,
+    fee,
+    dpAmount,
+    dp,
+    paymentStatus: paymentStatus as any,
+    notes,
+    note,
+    status
+  };
+};
+
+// Helper to normalize RateCard object fields
+const normalizeRateCard = (raw: any): RateCard => {
+  const name = raw.name || raw.title || 'Paket MC';
+  const title = raw.title || name;
+  const features = Array.isArray(raw.features) ? raw.features : (Array.isArray(raw.inclusions) ? raw.inclusions : []);
+  const inclusions = Array.isArray(raw.inclusions) ? raw.inclusions : features;
+  const notes = raw.notes || raw.description || '';
+  const description = raw.description || notes;
+
+  return {
+    ...raw,
+    id: raw.id,
+    ownerId: raw.ownerId || '',
+    name,
+    title,
+    price: Number(raw.price || 0),
+    features,
+    inclusions,
+    notes,
+    description,
+    category: raw.category || 'General'
+  };
+};
+
 // --- User Profile ---
 export const getUserProfile = async (uid: string): Promise<UserProfile | null> => {
   const docRef = doc(db, 'users', uid);
   const snap = await getDoc(docRef);
   if (snap.exists()) {
-    return snap.data() as UserProfile;
+    const data = snap.data();
+    return {
+      ...data,
+      displayName: data.displayName || data.name || 'MC Professional',
+      profileCompleted: data.profileCompleted ?? true
+    } as UserProfile;
   }
   return null;
 };
@@ -34,6 +118,7 @@ export const saveUserProfile = async (profile: UserProfile): Promise<void> => {
   const docRef = doc(db, 'users', profile.uid);
   await setDoc(docRef, {
     ...profile,
+    displayName: profile.displayName || profile.name || 'MC Professional',
     updatedAt: new Date().toISOString()
   }, { merge: true });
 };
@@ -47,19 +132,22 @@ export const subscribeBookings = (ownerId: string, callback: (bookings: Booking[
   return onSnapshot(q, (snapshot) => {
     const list: Booking[] = [];
     snapshot.forEach((doc) => {
-      list.push(doc.data() as Booking);
+      list.push(normalizeBooking({ id: doc.id, ...doc.data() }));
     });
-    // Sort by date descending locally
-    list.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    list.sort((a, b) => new Date(b.eventDate!).getTime() - new Date(a.eventDate!).getTime());
     callback(list);
+  }, (err) => {
+    console.error('Error subscribing to bookings:', err);
+    callback([]);
   });
 };
 
 export const saveBooking = async (booking: Booking): Promise<void> => {
   const docRef = doc(db, 'bookings', booking.id);
   const now = new Date().toISOString();
+  const normalized = normalizeBooking(booking);
   const data = {
-    ...booking,
+    ...normalized,
     createdAt: booking.createdAt || now,
     updatedAt: now
   };
@@ -79,10 +167,24 @@ export const subscribeClients = (ownerId: string, callback: (clients: Client[]) 
   return onSnapshot(q, (snapshot) => {
     const list: Client[] = [];
     snapshot.forEach((doc) => {
-      list.push(doc.data() as Client);
+      const data = doc.data();
+      list.push({
+        id: doc.id,
+        ownerId: data.ownerId || ownerId,
+        name: data.name || 'Klien',
+        type: data.type || 'DIRECT_CLIENT',
+        phone: data.phone || '',
+        email: data.email || '',
+        address: data.address || '',
+        notes: data.notes || '',
+        createdAt: data.createdAt || new Date().toISOString()
+      });
     });
     list.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
     callback(list);
+  }, (err) => {
+    console.error('Error subscribing to clients:', err);
+    callback([]);
   });
 };
 
@@ -109,9 +211,12 @@ export const subscribeInvoices = (ownerId: string, callback: (invoices: Invoice[
   return onSnapshot(q, (snapshot) => {
     const list: Invoice[] = [];
     snapshot.forEach((doc) => {
-      list.push(doc.data() as Invoice);
+      list.push({ id: doc.id, ...doc.data() } as Invoice);
     });
     callback(list);
+  }, (err) => {
+    console.error('Error subscribing to invoices:', err);
+    callback([]);
   });
 };
 
@@ -134,10 +239,22 @@ export const subscribeExpenses = (ownerId: string, callback: (expenses: Expense[
   return onSnapshot(q, (snapshot) => {
     const list: Expense[] = [];
     snapshot.forEach((doc) => {
-      list.push(doc.data() as Expense);
+      const data = doc.data();
+      list.push({
+        id: doc.id,
+        ownerId: data.ownerId || ownerId,
+        title: data.title || 'Pengeluaran',
+        category: data.category || 'Operasional',
+        amount: Number(data.amount || 0),
+        date: data.date || new Date().toISOString().split('T')[0],
+        createdAt: data.createdAt || new Date().toISOString()
+      });
     });
     list.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     callback(list);
+  }, (err) => {
+    console.error('Error subscribing to expenses:', err);
+    callback([]);
   });
 };
 
@@ -162,17 +279,21 @@ export const subscribeRateCards = (ownerId: string, callback: (rateCards: RateCa
   return onSnapshot(q, (snapshot) => {
     const list: RateCard[] = [];
     snapshot.forEach((doc) => {
-      list.push(doc.data() as RateCard);
+      list.push(normalizeRateCard({ id: doc.id, ...doc.data() }));
     });
     callback(list);
+  }, (err) => {
+    console.error('Error subscribing to rate cards:', err);
+    callback([]);
   });
 };
 
 export const saveRateCard = async (rateCard: RateCard): Promise<void> => {
   const docRef = doc(db, 'rate_cards', rateCard.id);
   const now = new Date().toISOString();
+  const normalized = normalizeRateCard(rateCard);
   await setDoc(docRef, {
-    ...rateCard,
+    ...normalized,
     createdAt: rateCard.createdAt || now,
     updatedAt: now
   }, { merge: true });
@@ -196,6 +317,9 @@ export const subscribeChecklists = (ownerId: string, bookingId: string, callback
     });
     list.sort((a, b) => a.order - b.order);
     callback(list);
+  }, (err) => {
+    console.error('Error subscribing to checklists:', err);
+    callback([]);
   });
 };
 
@@ -220,6 +344,9 @@ export const subscribeTestimonials = (userId: string, callback: (testimonials: T
       list.push(doc.data() as Testimonial);
     });
     callback(list);
+  }, (err) => {
+    console.error('Error subscribing to testimonials:', err);
+    callback([]);
   });
 };
 

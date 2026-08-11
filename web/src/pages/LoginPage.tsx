@@ -1,8 +1,33 @@
 import React, { useState } from 'react';
-import { Lock, Mail, Eye, EyeOff, ShieldCheck, LockKeyhole, RefreshCw, X, Mic, Calendar, DollarSign, BarChart2, CheckCircle2 } from 'lucide-react';
+import { Lock, Mail, Eye, EyeOff, ShieldCheck, RefreshCw, X, Mic, Calendar, DollarSign, BarChart2, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '../firebase/config';
+
+// Friendly Indonesian Auth Errors Mapper
+function getIndonesianAuthErrorMessage(error: any): string {
+  const code = error?.code || '';
+  switch (code) {
+    case 'auth/invalid-credential':
+    case 'auth/wrong-password':
+    case 'auth/user-not-found':
+      return 'Email atau password yang Anda masukkan salah. Silakan periksa kembali.';
+    case 'auth/email-already-in-use':
+      return 'Email ini sudah terdaftar. Silakan klik "Masuk sekarang" untuk login.';
+    case 'auth/invalid-email':
+      return 'Format email tidak valid. Pastikan penulisan email sudah benar.';
+    case 'auth/weak-password':
+      return 'Password terlalu lemah. Gunakan minimal 6 karakter kombinasi huruf dan angka.';
+    case 'auth/too-many-requests':
+      return 'Terlalu banyak percobaan gagal. Silakan coba beberapa saat lagi.';
+    case 'auth/network-request-failed':
+      return 'Koneksi internet bermasalah. Periksa koneksi perangkat Anda.';
+    case 'auth/popup-closed-by-user':
+      return 'Proses login Google dibatalkan.';
+    default:
+      return error?.message || 'Terjadi kesalahan sistem. Silakan coba lagi.';
+  }
+}
 
 export const LoginPage: React.FC = () => {
   const { loginWithGoogle } = useAuth();
@@ -29,12 +54,12 @@ export const LoginPage: React.FC = () => {
     e.preventDefault();
     setErrorMsg(null);
     if (!emailState.trim()) { setErrorMsg('Email pembayaran wajib diisi.'); return; }
-    if (!isPasswordValid) { setErrorMsg('Password harus mengandung huruf kapital, huruf kecil, dan angka.'); return; }
+    if (!isPasswordValid) { setErrorMsg('Password harus mengisikan huruf kapital, huruf kecil, dan angka (min 6 karakter).'); return; }
     setLoading(true);
     try {
       await createUserWithEmailAndPassword(auth, emailState, passwordState);
     } catch (err: any) {
-      setErrorMsg(err.message || 'Gagal mendaftarkan akun. Silakan coba lagi.');
+      setErrorMsg(getIndonesianAuthErrorMessage(err));
     } finally { setLoading(false); }
   };
 
@@ -47,7 +72,7 @@ export const LoginPage: React.FC = () => {
       await signInWithEmailAndPassword(auth, loginEmail, loginPassword);
       setShowLoginDialog(false);
     } catch (err: any) {
-      setLoginErrorMsg(err.message || 'Email atau password salah.');
+      setLoginErrorMsg(getIndonesianAuthErrorMessage(err));
     } finally { setLoading(false); }
   };
 
@@ -57,9 +82,9 @@ export const LoginPage: React.FC = () => {
     setLoading(true);
     try {
       await sendPasswordResetEmail(auth, resetEmail);
-      setResetStatus('Tautan reset password berhasil dikirim ke email Anda!');
+      setResetStatus('Tautan reset password berhasil dikirim ke email Anda! Silakan cek kotak masuk.');
     } catch (err: any) {
-      setResetStatus(`Gagal: ${err.message || 'Email tidak ditemukan.'}`);
+      setResetStatus(`Gagal: ${getIndonesianAuthErrorMessage(err)}`);
     } finally { setLoading(false); }
   };
 

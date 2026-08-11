@@ -37,13 +37,14 @@ import {
   deleteClient,
   subscribeRateCards,
   saveRateCard,
-  deleteRateCard
+  deleteRateCard,
+  saveUserProfile
 } from './services/firebaseService';
 
 const MainApp: React.FC = () => {
-  const { currentUser, userProfile, loading } = useAuth();
+  const { currentUser, userProfile, loading, updateContextProfile } = useAuth();
   
-  // 5 Main Tabs matching Android app: 'home' | 'agenda' | 'clients' | 'finance' | 'more'
+  // 5 Main Tabs matching Android app: 'home' | 'agenda' | 'clients' | 'finance' | 'more' | 'daymode'
   const [activeTab, setActiveTab] = useState<TabType>('home');
   
   // SubView router state
@@ -65,6 +66,9 @@ const MainApp: React.FC = () => {
     return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
   });
 
+  // Wizard modal state
+  const [showWizardModal, setShowWizardModal] = useState(false);
+
   // State collections from Firestore
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -82,6 +86,39 @@ const MainApp: React.FC = () => {
       document.documentElement.classList.remove('dark');
     }
   }, [isDarkMode]);
+
+  // Sync state with window.location.hash for browser history support & direct URLs
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.replace('#', '');
+      if (!hash) return;
+      
+      const validTabs: TabType[] = ['home', 'agenda', 'clients', 'finance', 'more', 'daymode'];
+      const validSubViews = ['booking_detail', 'invoice', 'price_list', 'profile', 'analytics', 'followup', 'todo', 'notifications', 'quick_action_settings'];
+
+      if (validTabs.includes(hash as TabType)) {
+        setActiveTab(hash as TabType);
+        setSubView('main');
+      } else if (validSubViews.includes(hash as any)) {
+        setSubView(hash as any);
+      }
+    };
+
+    window.addEventListener('hashchange', handleHashChange);
+    handleHashChange();
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
+  const navigateToTab = (tab: TabType) => {
+    setSubView('main');
+    setActiveTab(tab);
+    window.location.hash = tab;
+  };
+
+  const navigateToSubView = (sv: typeof subView) => {
+    setSubView(sv);
+    window.location.hash = sv;
+  };
 
   // Subscribe to Firestore collections when logged in
   useEffect(() => {
@@ -103,21 +140,17 @@ const MainApp: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-900 text-white flex flex-col items-center justify-center space-y-3">
-        <div className="w-12 h-12 rounded-2xl bg-indigo-600 animate-pulse flex items-center justify-center font-bold text-xl">
+      <div className="min-h-screen bg-slate-900 text-white flex flex-col items-center justify-center space-y-3" style={{minHeight:'100vh', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', background:'var(--bg-app)'}}>
+        <div style={{width:'48px', height:'48px', borderRadius:'14px', background:'var(--primary)', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:'800', color:'white', fontSize:'18px', boxShadow:'0 4px 14px rgba(79,70,229,0.3)'}}>
           MC
         </div>
-        <p className="text-xs font-semibold text-slate-400">Memuat MCJobId Web App...</p>
+        <p style={{fontSize:'13px', fontWeight:'600', color:'var(--text-3)'}}>Memuat mcjob.id Web App...</p>
       </div>
     );
   }
 
   if (!currentUser) {
     return <LoginPage />;
-  }
-
-  if (userProfile && !userProfile.profileCompleted) {
-    return <WizardPage onComplete={() => setActiveTab('home')} />;
   }
 
   // Handlers for Save/Delete
@@ -128,10 +161,8 @@ const MainApp: React.FC = () => {
   };
 
   const handleDeleteBooking = async (id: string) => {
-    if (window.confirm('Yakin ingin menghapus acara ini?')) {
-      await deleteBooking(id);
-      setSubView('main');
-    }
+    await deleteBooking(id);
+    navigateToSubView('main');
   };
 
   const handleSaveExpense = async (e: Expense) => {
@@ -164,6 +195,20 @@ const MainApp: React.FC = () => {
     await deleteRateCard(id);
   };
 
+  // Profile setup handler for onboarding wizard
+  const handleCompleteOnboarding = async (initialBooking?: Booking) => {
+    if (userProfile && currentUser) {
+      const updatedProfile = { ...userProfile, profileCompleted: true };
+      await saveUserProfile(updatedProfile);
+      updateContextProfile(updatedProfile);
+    }
+    if (initialBooking && currentUser) {
+      await handleSaveBooking(initialBooking);
+    }
+    setShowWizardModal(false);
+    navigateToTab('home');
+  };
+
   // Helper for title header
   const getPageTitle = () => {
     if (subView === 'booking_detail') return 'Detail Job Acara';
@@ -174,7 +219,7 @@ const MainApp: React.FC = () => {
     if (subView === 'followup') return 'Pusat Follow Up Klien';
     if (subView === 'todo') return 'Daftar Tugas To-Do MC';
     if (subView === 'notifications') return 'Pusat Pengingat';
-    if (subView === 'quick_action_settings') return 'Pengaturan Pintasan FAB';
+    if (subView === 'quick_action_settings') return 'Pengaturan Pintasan Dasbor';
 
     switch (activeTab) {
       case 'home': return 'mcjob.id Dashboard';
@@ -193,27 +238,33 @@ const MainApp: React.FC = () => {
       return (
         <BookingDetailPage
           booking={selectedBooking}
-          onBack={() => setSubView('main')}
-          onOpenDayMode={(b) => {
+          onBack={() => navigateToSubView('main')}
+          onEdit={(b) => {
+            handleSaveBooking(b);
             setSelectedBooking(b);
-            setActiveTab('daymode');
-            setSubView('main');
+          }}
+          onDelete={handleDeleteBooking}
+          onOpenMcDayMode={(b) => {
+            setSelectedBooking(b);
+            navigateToTab('daymode');
           }}
           onOpenInvoice={(b) => {
             setSelectedBooking(b);
-            setSubView('invoice');
+            navigateToSubView('invoice');
           }}
-          onDeleteBooking={handleDeleteBooking}
-          onUpdateBooking={handleSaveBooking}
         />
       );
     }
 
-    if (subView === 'invoice' && selectedBooking) {
+    if (subView === 'invoice') {
+      const activeBooking = selectedBooking || (bookings.length > 0 ? bookings[0] : null);
       return (
         <InvoicePage
-          booking={selectedBooking}
-          onBack={() => setSubView('booking_detail')}
+          booking={activeBooking}
+          onBack={() => {
+            if (selectedBooking) navigateToSubView('booking_detail');
+            else navigateToSubView('main');
+          }}
         />
       );
     }
@@ -222,14 +273,13 @@ const MainApp: React.FC = () => {
       return (
         <PriceListPage
           rateCards={rateCards}
-          onSaveRateCard={handleSaveRateCard}
-          onDeleteRateCard={handleDeleteRateCard}
+          onBack={() => navigateToSubView('main')}
         />
       );
     }
 
     if (subView === 'profile') {
-      return <ProfilePage />;
+      return <ProfilePage onBack={() => navigateToSubView('main')} />;
     }
 
     if (subView === 'analytics') {
@@ -237,7 +287,7 @@ const MainApp: React.FC = () => {
         <AnalyticsPage
           bookings={bookings}
           expenses={expenses}
-          onBack={() => setSubView('main')}
+          onBack={() => navigateToSubView('main')}
         />
       );
     }
@@ -247,21 +297,21 @@ const MainApp: React.FC = () => {
         <FollowUpPage
           bookings={bookings}
           clients={clients}
-          onBack={() => setSubView('main')}
+          onBack={() => navigateToSubView('main')}
         />
       );
     }
 
     if (subView === 'todo') {
-      return <TodoPage onBack={() => setSubView('main')} />;
+      return <TodoPage onBack={() => navigateToSubView('main')} />;
     }
 
     if (subView === 'notifications') {
-      return <NotificationPage onBack={() => setSubView('main')} />;
+      return <NotificationPage bookings={bookings} onBack={() => navigateToSubView('main')} />;
     }
 
     if (subView === 'quick_action_settings') {
-      return <QuickActionSettingsPage onBack={() => setSubView('main')} />;
+      return <QuickActionSettingsPage onBack={() => navigateToSubView('main')} />;
     }
 
     // 5 Main Tabs
@@ -271,23 +321,20 @@ const MainApp: React.FC = () => {
           <HomePage
             bookings={bookings}
             onNavigateTab={(target) => {
-              if (target === 'price_list' || target === 'testimonial' || target === 'notifications') {
-                setSubView(target);
+              if (['price_list', 'testimonial', 'notifications', 'invoice', 'profile', 'analytics', 'followup', 'todo'].includes(target)) {
+                navigateToSubView(target);
               } else {
-                setSubView('main');
-                setActiveTab(target);
+                navigateToTab(target);
               }
             }}
-            onOpenCreateJob={() => {
-              setActiveTab('agenda');
-            }}
+            onOpenCreateJob={() => setShowWizardModal(true)}
             onOpenBookingDetail={(b) => {
               setSelectedBooking(b);
-              setSubView('booking_detail');
+              navigateToSubView('booking_detail');
             }}
             onOpenDayMode={(b) => {
               setSelectedBooking(b);
-              setActiveTab('daymode');
+              navigateToTab('daymode');
             }}
           />
         );
@@ -299,11 +346,9 @@ const MainApp: React.FC = () => {
             onSaveBooking={handleSaveBooking}
             onOpenDetail={(b) => {
               setSelectedBooking(b);
-              setSubView('booking_detail');
+              navigateToSubView('booking_detail');
             }}
-            onOpenCreateJob={() => {
-              // Open create job modal
-            }}
+            onOpenCreateJob={() => setShowWizardModal(true)}
           />
         );
 
@@ -330,14 +375,13 @@ const MainApp: React.FC = () => {
         return (
           <MorePage
             onNavigateTab={(target) => {
-              if (target === 'profile' || target === 'price_list' || target === 'analytics' || target === 'followup' || target === 'todo' || target === 'notifications' || target === 'quick_action_settings' || target === 'invoice') {
-                if (target === 'invoice' && bookings.length > 0) {
+              if (['profile', 'price_list', 'analytics', 'followup', 'todo', 'notifications', 'quick_action_settings', 'invoice'].includes(target)) {
+                if (target === 'invoice' && bookings.length > 0 && !selectedBooking) {
                   setSelectedBooking(bookings[0]);
                 }
-                setSubView(target);
+                navigateToSubView(target as any);
               } else {
-                setSubView('main');
-                setActiveTab(target);
+                navigateToTab(target as any);
               }
             }}
           />
@@ -348,7 +392,7 @@ const MainApp: React.FC = () => {
           <McDayModePage
             booking={selectedBooking}
             allBookings={bookings}
-            onBack={() => setActiveTab('home')}
+            onBack={() => navigateToTab('home')}
             onSelectBooking={(b) => setSelectedBooking(b)}
           />
         );
@@ -364,14 +408,8 @@ const MainApp: React.FC = () => {
       {activeTab !== 'daymode' && (
         <Sidebar
           activeTab={activeTab}
-          onChangeTab={(t) => {
-            setSubView('main');
-            setActiveTab(t);
-          }}
-          onOpenCreateJob={() => {
-            setSubView('main');
-            setActiveTab('agenda');
-          }}
+          onChangeTab={(t) => navigateToTab(t)}
+          onOpenCreateJob={() => setShowWizardModal(true)}
           isDarkMode={isDarkMode}
           onToggleDarkMode={() => setIsDarkMode(!isDarkMode)}
         />
@@ -397,12 +435,20 @@ const MainApp: React.FC = () => {
         <div className="md:hidden" style={{display:'block'}}>
           <BottomNav
             activeTab={activeTab}
-            onChangeTab={(t) => {
-              setSubView('main');
-              setActiveTab(t);
-            }}
+            onChangeTab={(t) => navigateToTab(t)}
           />
         </div>
+      )}
+
+      {/* Wizard Modal for Creating Job */}
+      {showWizardModal && (
+        <WizardPage
+          onClose={() => setShowWizardModal(false)}
+          onSave={async (b) => {
+            await handleSaveBooking(b);
+            setShowWizardModal(false);
+          }}
+        />
       )}
     </div>
   );

@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
-import { ArrowLeft, MessageSquare, Search, Copy, CheckCircle2, AlertCircle } from 'lucide-react';
-import type { Booking } from '../types';
+import { ArrowLeft, MessageSquare, Search, Copy, CheckCircle2, AlertCircle, Send, Phone } from 'lucide-react';
+import type { Booking, Client } from '../types';
 
 interface FollowUpPageProps {
   onBack: () => void;
   bookings: Booking[];
+  clients?: Client[];
 }
 
-export const FollowUpPage: React.FC<FollowUpPageProps> = ({ onBack, bookings }) => {
+export const FollowUpPage: React.FC<FollowUpPageProps> = ({ onBack, bookings, clients = [] }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
@@ -19,13 +20,15 @@ export const FollowUpPage: React.FC<FollowUpPageProps> = ({ onBack, bookings }) 
     const isPending = b.paymentStatus !== 'PAID';
     
     // Check if event is within next 7 days
-    const eventTime = new Date(b.eventDate).getTime();
+    const eventTime = new Date(b.eventDate || b.date || todayStr).getTime();
     const todayTime = new Date(todayStr).getTime();
     const diffDays = (eventTime - todayTime) / (1000 * 3600 * 24);
     const isUpcomingH7 = diffDays >= 0 && diffDays <= 7;
 
-    const matchSearch = b.clientName.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                        (b.eventTitle && b.eventTitle.toLowerCase().includes(searchQuery.toLowerCase()));
+    const title = b.eventTitle || b.name || '';
+    const clientName = b.clientName || b.client || '';
+    const matchSearch = clientName.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                        title.toLowerCase().includes(searchQuery.toLowerCase());
 
     return (isPending || isUpcomingH7) && matchSearch;
   });
@@ -33,14 +36,36 @@ export const FollowUpPage: React.FC<FollowUpPageProps> = ({ onBack, bookings }) 
   const formatRp = (val: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(val);
 
   const generateMessage = (b: Booking) => {
-    const sisa = (b.totalFee || 0) - (b.dpAmount || 0);
-    return `Halo Kak ${b.clientName},\n\nSemoga kabarnya baik ya kak. Saya ingin mengkonfirmasi kembali untuk acara *${b.eventTitle || 'Event'}* pada tanggal *${b.eventDate}*.\n\n${b.paymentStatus !== 'PAID' ? `Sebagai pengingat, masih terdapat sisa pelunasan sebesar *${formatRp(sisa)}*.` : 'Untuk administrasi sudah lunas.'}\n\nKira-kira apakah ada update terbaru mengenai rundown atau teknis acara kak?\n\nTerima kasih banyak 🙏`;
+    const total = b.totalFee || b.fee || 0;
+    const dp = b.dpAmount || b.dp || 0;
+    const sisa = total - dp;
+    const title = b.eventTitle || b.name || 'Event';
+    const clientName = b.clientName || b.client || 'Kak';
+    const eventDate = b.eventDate || b.date || '';
+
+    return `Halo Kak ${clientName},\n\nSemoga kabarnya baik ya kak. Saya ingin mengkonfirmasi kembali untuk acara *${title}* pada tanggal *${eventDate}*.\n\n${b.paymentStatus !== 'PAID' && sisa > 0 ? `Sebagai pengingat, masih terdapat sisa pelunasan sebesar *${formatRp(sisa)}*.` : 'Untuk administrasi pembayaran sudah tercatat lunas.'}\n\nKira-kira apakah ada update terbaru mengenai rundown atau teknis acara kak?\n\nTerima kasih banyak 🙏`;
   };
 
   const copyMessage = (b: Booking) => {
     navigator.clipboard.writeText(generateMessage(b));
     setCopiedId(b.id);
     setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  const openWhatsApp = (b: Booking) => {
+    const clientName = b.clientName || b.client || '';
+    // Find client phone number from clients database or booking object
+    const matchedClient = clients.find(c => c.name.toLowerCase() === clientName.toLowerCase());
+    const phone = matchedClient?.phone || '';
+    const cleanPhone = phone.replace(/[^0-9]/g, '');
+    const encodedText = encodeURIComponent(generateMessage(b));
+    
+    if (cleanPhone) {
+      const formattedPhone = cleanPhone.startsWith('0') ? `62${cleanPhone.slice(1)}` : cleanPhone;
+      window.open(`https://wa.me/${formattedPhone}?text=${encodedText}`, '_blank');
+    } else {
+      window.open(`https://wa.me/?text=${encodedText}`, '_blank');
+    }
   };
 
   return (
@@ -55,7 +80,7 @@ export const FollowUpPage: React.FC<FollowUpPageProps> = ({ onBack, bookings }) 
           <div>
             <h1 className="page-title" style={{display:'flex', alignItems:'center', gap:'8px'}}>
               <MessageSquare size={20} color="#2563EB" />
-              Pusat Follow Up
+              Pusat Follow Up Klien
             </h1>
             <p className="page-subtitle">Daftar klien yang perlu di-follow up (H-7 atau belum lunas).</p>
           </div>
@@ -89,15 +114,25 @@ export const FollowUpPage: React.FC<FollowUpPageProps> = ({ onBack, bookings }) 
       ) : (
         <div style={{display:'flex', flexDirection:'column', gap:'16px'}}>
           {followUpTargets.map(b => {
-            const sisa = (b.totalFee || 0) - (b.dpAmount || 0);
+            const total = b.totalFee || b.fee || 0;
+            const dp = b.dpAmount || b.dp || 0;
+            const sisa = total - dp;
+            const clientName = b.clientName || b.client || 'Klien';
+            const matchedClient = clients.find(c => c.name.toLowerCase() === clientName.toLowerCase());
+
             return (
               <div key={b.id} className="card" style={{padding:'20px'}}>
-                <div style={{display:'flex', alignItems:'flex-start', justifyContent:'space-between', marginBottom:'16px'}}>
+                <div style={{display:'flex', alignItems:'flex-start', justifyContent:'space-between', marginBottom:'16px', flexWrap:'wrap', gap:'8px'}}>
                   <div>
-                    <h3 style={{fontSize:'16px', fontWeight:'700', color:'var(--text-1)', letterSpacing:'-0.01em', marginBottom:'4px'}}>{b.clientName}</h3>
-                    <p style={{fontSize:'13px', color:'var(--text-3)'}}>{b.eventTitle || 'Acara'} • {b.eventDate}</p>
+                    <h3 style={{fontSize:'16px', fontWeight:'700', color:'var(--text-1)', letterSpacing:'-0.01em', marginBottom:'4px'}}>{clientName}</h3>
+                    <p style={{fontSize:'13px', color:'var(--text-3)'}}>{b.eventTitle || b.name || 'Acara'} • {b.eventDate || b.date}</p>
+                    {matchedClient?.phone && (
+                      <p style={{fontSize:'12px', color:'var(--primary)', fontWeight:'600', marginTop:'2px', display:'flex', alignItems:'center', gap:'4px'}}>
+                        <Phone size={12} /> {matchedClient.phone}
+                      </p>
+                    )}
                   </div>
-                  {b.paymentStatus !== 'PAID' && (
+                  {b.paymentStatus !== 'PAID' && sisa > 0 && (
                     <span className="badge badge-error" style={{gap:'4px'}}>
                       <AlertCircle size={12} /> Sisa {formatRp(sisa)}
                     </span>
@@ -110,15 +145,25 @@ export const FollowUpPage: React.FC<FollowUpPageProps> = ({ onBack, bookings }) 
                   </p>
                 </div>
 
-                <button 
-                  onClick={() => copyMessage(b)}
-                  className="btn btn-secondary btn-full"
-                  style={{color: copiedId === b.id ? 'var(--success)' : 'var(--text-2)', borderColor: copiedId === b.id ? 'var(--success)' : 'var(--border)'}}
-                >
-                  {copiedId === b.id ? <><CheckCircle2 size={16} /> Pesan Tersalin</> : <><Copy size={16} /> Salin Pesan Follow Up</>}
-                </button>
+                <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px'}}>
+                  <button 
+                    onClick={() => copyMessage(b)}
+                    className="btn btn-secondary btn-full"
+                    style={{color: copiedId === b.id ? 'var(--success)' : 'var(--text-2)', borderColor: copiedId === b.id ? 'var(--success)' : 'var(--border)'}}
+                  >
+                    {copiedId === b.id ? <><CheckCircle2 size={15} /> Tersalin</> : <><Copy size={15} /> Salin Pesan</>}
+                  </button>
+
+                  <button 
+                    onClick={() => openWhatsApp(b)}
+                    className="btn btn-primary btn-full"
+                    style={{background:'#25D366', borderColor:'#25D366'}}
+                  >
+                    <Send size={15} /> Buka WhatsApp
+                  </button>
+                </div>
               </div>
-            )
+            );
           })}
         </div>
       )}

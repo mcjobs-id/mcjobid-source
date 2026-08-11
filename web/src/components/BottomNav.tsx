@@ -19,9 +19,14 @@ export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, onChangeTab }) 
   return (
     <nav
       className="glass-bottom"
+      aria-label="Mobile Navigation Bar"
       style={{
         position: 'fixed', bottom: 0, left: 0, right: 0,
-        zIndex: 40, padding: '6px 8px 8px',
+        zIndex: 40,
+        paddingTop: '6px',
+        paddingLeft: '8px',
+        paddingRight: '8px',
+        paddingBottom: 'calc(8px + env(safe-area-inset-bottom, 0px))',
         display: 'flex', alignItems: 'stretch',
         gap: '4px',
       }}
@@ -32,12 +37,14 @@ export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, onChangeTab }) 
           <button
             key={id}
             onClick={() => onChangeTab(id as TabType)}
+            aria-label={label}
+            aria-current={isActive ? 'page' : undefined}
             style={{
               flex: 1,
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
-              justifyContent: 'center',
+              justify: 'center',
               gap: '3px',
               padding: '6px 4px',
               borderRadius: '10px',
