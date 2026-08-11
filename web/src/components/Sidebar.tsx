@@ -57,7 +57,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* Navigation */}
-      <nav style={{flex:1, padding:'8px 8px', overflowY:'auto'}}>
+      <nav style={{flex:1, padding:'8px 8px', overflowY:'auto', display:'flex', flexDirection:'column', gap:'4px'}}>
         <p style={{fontSize:'10px', fontWeight:'700', color:'var(--text-4)', textTransform:'uppercase', letterSpacing:'0.07em', padding:'8px 12px 4px'}}>Navigasi</p>
 
         {mainNavItems.map(({ id, label, icon: Icon }) => {
@@ -67,9 +67,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
               key={id}
               onClick={() => onChangeTab(id as TabType)}
               className={`nav-item ${isActive ? 'active' : ''}`}
+              style={{
+                width: '100%',
+                display: 'flex',
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'flex-start',
+                gap: '10px',
+                padding: '10px 12px',
+                textAlign: 'left',
+                boxSizing: 'border-box'
+              }}
             >
-              <Icon size={17} />
-              <span>{label}</span>
+              <Icon size={17} style={{ flexShrink: 0 }} />
+              <span style={{ whiteSpace: 'nowrap', fontSize: '13px', fontWeight: isActive ? '700' : '500' }}>{label}</span>
               {isActive && (
                 <div style={{position:'absolute', left:0, top:'50%', transform:'translateY(-50%)', width:'3px', height:'20px', background:'var(--primary)', borderRadius:'0 3px 3px 0'}} />
               )}
