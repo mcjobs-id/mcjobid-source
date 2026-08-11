@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Lock, Mail, Eye, EyeOff, ShieldCheck, RefreshCw, X, Mic, Calendar, DollarSign, BarChart2, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, updateProfile } from 'firebase/auth';
@@ -316,7 +317,7 @@ export const LoginPage: React.FC = () => {
       </div>
 
       {/* ========== LOGIN DIALOG MODAL ========== */}
-      {showLoginDialog && (
+      {showLoginDialog && createPortal(
         <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowLoginDialog(false); }}>
           <div className="modal-panel animate-fade-in">
             <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'20px'}}>
@@ -371,11 +372,12 @@ export const LoginPage: React.FC = () => {
               </button>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* ========== RESET PASSWORD MODAL ========== */}
-      {showResetDialog && (
+      {showResetDialog && createPortal(
         <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowResetDialog(false); }}>
           <div className="modal-panel animate-fade-in">
             <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'20px'}}>
@@ -409,7 +411,8 @@ export const LoginPage: React.FC = () => {
               </button>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       <style>{`
