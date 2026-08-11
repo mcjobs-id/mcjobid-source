@@ -1,5 +1,6 @@
 import React from 'react';
 import { Moon, Sun, Bell } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 interface NavbarProps {
@@ -11,6 +12,7 @@ interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = ({ isDarkMode, onToggleDarkMode, title = 'mcjob.id', subtitle }) => {
   const { userProfile } = useAuth();
+  const navigate = useNavigate();
 
   return (
     <header className="top-navbar">
@@ -58,7 +60,10 @@ export const Navbar: React.FC<NavbarProps> = ({ isDarkMode, onToggleDarkMode, ti
         <div style={{width:'1px', height:'20px', background:'var(--border)', margin:'0 4px'}} />
 
         {/* User avatar pill */}
-        <div style={{display:'flex', alignItems:'center', gap:'8px', padding:'5px 10px 5px 5px', borderRadius:'9999px', background:'var(--bg-surface-2)', border:'1px solid var(--border)', cursor:'pointer'}}>
+        <div 
+          onClick={() => navigate('/profile')}
+          style={{display:'flex', alignItems:'center', gap:'8px', padding:'5px 10px 5px 5px', borderRadius:'9999px', background:'var(--bg-surface-2)', border:'1px solid var(--border)', cursor:'pointer'}}
+        >
           <div style={{width:'24px', height:'24px', borderRadius:'50%', background:'var(--primary-light)', border:'1px solid rgba(79,70,229,0.25)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0}}>
             <span style={{fontSize:'10px', fontWeight:'700', color:'var(--primary)'}}>
               {userProfile?.displayName?.charAt(0).toUpperCase() || 'M'}
