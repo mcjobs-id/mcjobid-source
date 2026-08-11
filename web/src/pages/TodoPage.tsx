@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { ArrowLeft, CheckSquare, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeft, CheckSquare, Plus, Trash2, Sparkles, Filter, AlertCircle, Calendar, CheckCircle2 } from 'lucide-react';
 import type { TodoItem } from '../types';
 import { useAuth } from '../context/AuthContext';
+import { Modal } from '../components/Modal';
 
 interface TodoPageProps {
   todos: TodoItem[];
@@ -10,32 +11,120 @@ interface TodoPageProps {
   onBack: () => void;
 }
 
+const PREDEFINED_MC_TEMPLATES: Omit<TodoItem, 'id' | 'ownerId'>[] = [
+  { title: 'Check Rundown & Technical Meeting H-7 dengan WO/Klien', category: 'PERSIAPAN', priority: 'TINGGI', isCompleted: false },
+  { title: 'Fitting Dresscode & Outfit MC sesuai Tema Acara', category: 'PERSIAPAN', priority: 'SEDANG', isCompleted: false },
+  { title: 'Latihan Olah Vokal & Pemanasan Suara H-1', category: 'PERSIAPAN', priority: 'SEDANG', isCompleted: false },
+  { title: 'Uji Coba Microphone & Sound Check di Venue Acara', category: 'HARI_H', priority: 'TINGGI', isCompleted: false },
+  { title: 'Konfirmasi Susunan Nama Tamu VVIP & Gelar Jabatan', category: 'HARI_H', priority: 'TINGGI', isCompleted: false },
+  { title: 'Terbitkan Invoice & Kirim Tagihan Pelunasan ke Klien', category: 'PASCA_EVENT', priority: 'TINGGI', isCompleted: false },
+  { title: 'Minta Testimoni & Ulasan Klien untuk Portofolio', category: 'PASCA_EVENT', priority: 'SEDANG', isCompleted: false },
+  { title: 'Update Foto & Video Highlight Perform di Instagram/TikTok', category: 'KARIER', priority: 'RENDAH', isCompleted: false },
+];
+
 export const TodoPage: React.FC<TodoPageProps> = ({ todos, onSaveTodo, onDeleteTodo, onBack }) => {
-  const [newTask, setNewTask] = useState('');
   const { currentUser } = useAuth();
+  
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('SEMUA');
+  const [selectedStatus, setSelectedStatus] = useState<'ALL' | 'PENDING' | 'DONE'>('ALL');
+
+  // Modal State
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [title, setTitle] = useState('');
+  const [category, setCategory] = useState<'PERSIAPAN' | 'HARI_H' | 'PASCA_EVENT' | 'KARIER' | 'UMUM'>('PERSIAPAN');
+  const [priority, setPriority] = useState<'TINGGI' | 'SEDANG' | 'RENDAH'>('SEDANG');
+  const [notes, setNotes] = useState('');
+  const [saving, setSaving] = useState(false);
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newTask.trim() || !currentUser?.uid) return;
+    if (!title.trim() || !currentUser?.uid) return;
+    setSaving(true);
+    try {
+      const newTodo: TodoItem = {
+        id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        ownerId: currentUser.uid,
+        title,
+        category,
+        priority,
+        notes,
+        isCompleted: false,
+        createdAt: new Date().toISOString()
+      };
+      await onSaveTodo(newTodo);
+      setTitle('');
+      setNotes('');
+      setIsModalOpen(false);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleApplyTemplates = async () => {
+    if (!currentUser?.uid) return;
+    if (!confirm('Muat 8 checklist tugas standar MC ke daftar tugas Anda?')) return;
     
-    const newTodo: TodoItem = {
-      id: Date.now().toString(),
-      ownerId: currentUser.uid,
-      title: newTask,
-      isCompleted: false,
-    };
-    await onSaveTodo(newTodo);
-    setNewTask('');
+    for (const item of PREDEFINED_MC_TEMPLATES) {
+      const newTodo: TodoItem = {
+        id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        ownerId: currentUser.uid,
+        title: item.title,
+        category: item.category,
+        priority: item.priority,
+        isCompleted: false,
+        createdAt: new Date().toISOString()
+      };
+      await onSaveTodo(newTodo);
+    }
   };
 
   const toggleTodo = async (todo: TodoItem) => {
     await onSaveTodo({ ...todo, isCompleted: !todo.isCompleted });
   };
 
+  // Stats
+  const totalCount = todos.length;
   const completedCount = todos.filter(t => t.isCompleted).length;
+  const pendingCount = totalCount - completedCount;
+  const highPriorityPending = todos.filter(t => !t.isCompleted && (t.priority === 'high' || t.priority === 'TINGGI')).length;
+  const percent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+
+  // Filtering
+  const filteredTodos = todos.filter(t => {
+    if (selectedStatus === 'PENDING' && t.isCompleted) return false;
+    if (selectedStatus === 'DONE' && !t.isCompleted) return false;
+    if (selectedCategory !== 'SEMUA' && t.category !== selectedCategory) return false;
+
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      const matchTitle = t.title.toLowerCase().includes(q);
+      const matchNotes = (t.notes || '').toLowerCase().includes(q);
+      return matchTitle || matchNotes;
+    }
+    return true;
+  });
+
+  const getPriorityBadge = (p?: string) => {
+    if (p === 'TINGGI' || p === 'high') return <span className="badge badge-error" style={{fontSize:'10px'}}>Prioritas Tinggi</span>;
+    if (p === 'SEDANG' || p === 'medium') return <span className="badge badge-warning" style={{fontSize:'10px'}}>Prioritas Sedang</span>;
+    return <span className="badge badge-success" style={{fontSize:'10px', background:'rgba(5,150,105,0.1)'}}>Prioritas Rendah</span>;
+  };
+
+  const getCategoryLabel = (c?: string) => {
+    switch (c) {
+      case 'PERSIAPAN': return 'Persiapan Event 🎯';
+      case 'HARI_H': return 'Hari-H Acara 🎤';
+      case 'PASCA_EVENT': return 'Pasca Acara 💼';
+      case 'KARIER': return 'Karier & Portofolio 🚀';
+      default: return 'Catatan Umum 📝';
+    }
+  };
 
   return (
-    <div className="animate-fade-in" style={{maxWidth:'800px', margin:'0 auto', paddingBottom:'24px'}}>
+    <div className="animate-fade-in" style={{maxWidth:'850px', margin:'0 auto', paddingBottom:'32px'}}>
       
       {/* ── HEADER ── */}
       <div className="page-header" style={{alignItems:'center'}}>
@@ -45,82 +134,233 @@ export const TodoPage: React.FC<TodoPageProps> = ({ todos, onSaveTodo, onDeleteT
           </button>
           <div>
             <h1 className="page-title" style={{display:'flex', alignItems:'center', gap:'8px'}}>
-              <CheckSquare size={20} color="#7C3AED" />
-              Daftar Tugas & To-Do
+              <CheckSquare size={20} color="#7C3AED" /> Tugas & To-Do MC
             </h1>
-            <p className="page-subtitle">Checklist persiapan perform dan operasional karier MC.</p>
+            <p className="page-subtitle">Checklist persiapan perform, gladi resik, dan operasional karier MC.</p>
           </div>
+        </div>
+
+        <div style={{display:'flex', gap:'8px'}}>
+          <button onClick={handleApplyTemplates} className="btn btn-secondary btn-sm" style={{color:'#7C3AED', borderColor:'#7C3AED'}}>
+            <Sparkles size={14} /> Template MC 🚀
+          </button>
+          <button onClick={() => setIsModalOpen(true)} className="btn btn-primary btn-sm" style={{background:'#7C3AED', borderColor:'#7C3AED'}}>
+            <Plus size={14} /> Tambah Tugas
+          </button>
         </div>
       </div>
 
+      {/* ── HERO STATS CARD ── */}
       <div className="card" style={{padding:'24px', marginBottom:'24px', borderTop:'4px solid #7C3AED'}}>
-        <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'16px'}}>
+        <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'14px', flexWrap:'wrap', gap:'12px'}}>
           <div>
-            <h3 style={{fontSize:'16px', fontWeight:'700', color:'var(--text-1)'}}>Progress Tugas</h3>
-            <p style={{fontSize:'12px', color:'var(--text-3)'}}>{completedCount} dari {todos.length} tugas selesai</p>
+            <span style={{fontSize:'12px', fontWeight:'700', color:'var(--text-3)', textTransform:'uppercase'}}>Progress Kesiapan Performance</span>
+            <h3 style={{fontSize:'20px', fontWeight:'800', color:'var(--text-1)', marginTop:'2px'}}>
+              {completedCount} dari {totalCount} tugas selesai ({percent}%)
+            </h3>
           </div>
-          <span style={{fontSize:'24px', fontWeight:'800', color:'#7C3AED'}}>
-            {todos.length > 0 ? Math.round((completedCount / todos.length) * 100) : 0}%
-          </span>
+          
+          <div style={{display:'flex', alignItems:'center', gap:'12px'}}>
+            {highPriorityPending > 0 && (
+              <span className="badge badge-error" style={{gap:'4px', padding:'6px 12px'}}>
+                <AlertCircle size={13} /> {highPriorityPending} Prioritas Tinggi Tertunda
+              </span>
+            )}
+            <span style={{fontSize:'28px', fontWeight:'900', color:'#7C3AED', fontVariantNumeric:'tabular-nums'}}>
+              {percent}%
+            </span>
+          </div>
         </div>
         
         {/* Progress Bar */}
-        <div style={{width:'100%', height:'8px', background:'var(--bg-surface-2)', borderRadius:'99px', overflow:'hidden'}}>
+        <div style={{width:'100%', height:'10px', background:'var(--bg-surface-2)', borderRadius:'99px', overflow:'hidden'}}>
           <div style={{
-            height:'100%', background:'#7C3AED', 
-            width: `${todos.length > 0 ? (completedCount / todos.length) * 100 : 0}%`,
+            height:'100%', background:'linear-gradient(90deg, #7C3AED 0%, #6D28D9 100%)', 
+            width: `${percent}%`,
             transition: 'width 0.3s ease'
           }} />
         </div>
       </div>
 
-      <form onSubmit={handleAdd} style={{display:'flex', gap:'12px', marginBottom:'24px'}}>
-        <input 
-          type="text" 
-          value={newTask} 
-          onChange={e => setNewTask(e.target.value)} 
-          placeholder="Tambah tugas baru..." 
-          className="input-field" 
-          style={{flex:1}}
-        />
-        <button type="submit" className="btn btn-primary" style={{background:'#7C3AED', borderColor:'#7C3AED', flexShrink:0}}>
-          <Plus size={16} /> Tambah
-        </button>
-      </form>
+      {/* ── FILTERS & STATUS TABS ── */}
+      <div style={{display:'flex', flexDirection:'column', gap:'12px', marginBottom:'20px'}}>
+        <div style={{display:'flex', gap:'8px', overflowX:'auto'}}>
+          <button
+            onClick={() => setSelectedStatus('ALL')}
+            className={`btn btn-sm ${selectedStatus === 'ALL' ? 'btn-primary' : 'btn-secondary'}`}
+            style={{background: selectedStatus === 'ALL' ? '#7C3AED' : undefined, borderColor: selectedStatus === 'ALL' ? '#7C3AED' : undefined}}
+          >
+            Semua ({totalCount})
+          </button>
+          <button
+            onClick={() => setSelectedStatus('PENDING')}
+            className={`btn btn-sm ${selectedStatus === 'PENDING' ? 'btn-primary' : 'btn-secondary'}`}
+          >
+            Tertunda ({pendingCount})
+          </button>
+          <button
+            onClick={() => setSelectedStatus('DONE')}
+            className={`btn btn-sm ${selectedStatus === 'DONE' ? 'btn-primary' : 'btn-secondary'}`}
+          >
+            Selesai ({completedCount})
+          </button>
+        </div>
 
-      <div style={{display:'flex', flexDirection:'column', gap:'12px'}}>
-        {todos.length === 0 ? (
-          <div className="card empty-state" style={{padding:'40px 24px'}}>
+        {/* Category Filter Chips */}
+        <div style={{display:'flex', gap:'6px', overflowX:'auto'}}>
+          {[
+            { id: 'SEMUA', label: 'Semua Kategori' },
+            { id: 'PERSIAPAN', label: 'Persiapan Event' },
+            { id: 'HARI_H', label: 'Hari-H Acara' },
+            { id: 'PASCA_EVENT', label: 'Pasca Acara' },
+            { id: 'KARIER', label: 'Karier & Portofolio' },
+          ].map(c => (
+            <button
+              key={c.id}
+              onClick={() => setSelectedCategory(c.id)}
+              className={`badge ${selectedCategory === c.id ? 'badge-primary' : 'badge-neutral'}`}
+              style={{
+                cursor:'pointer', padding:'6px 12px', fontSize:'12px', borderRadius:'9999px',
+                border: selectedCategory === c.id ? 'none' : '1px solid var(--border)',
+                background: selectedCategory === c.id ? '#7C3AED' : 'var(--bg-surface)'
+              }}
+            >
+              {c.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* ── LIST ── */}
+      <div style={{display:'flex', flexDirection:'column', gap:'10px'}}>
+        {filteredTodos.length === 0 ? (
+          <div className="card empty-state" style={{padding:'48px 24px'}}>
             <CheckSquare size={24} className="empty-state-icon" style={{color:'#7C3AED', background:'#F5F3FF'}} />
-            <p style={{fontSize:'14px', fontWeight:'600'}}>Semua tugas selesai!</p>
+            <p style={{fontSize:'14px', fontWeight:'600', color:'var(--text-1)'}}>Tidak ada tugas dalam tampilan ini!</p>
+            <p style={{fontSize:'12px', color:'var(--text-3)', maxWidth:'280px', margin:'4px auto 12px'}}>
+              Gunakan tombol Template MC di atas untuk mengisi 8 tugas standar kesiapan perform secara otomatis.
+            </p>
+            <button onClick={handleApplyTemplates} className="btn btn-secondary btn-sm" style={{color:'#7C3AED'}}>
+              <Sparkles size={14} /> Muat Template MC 🚀
+            </button>
           </div>
         ) : (
-          todos.map(t => (
-            <div key={t.id} className="card" style={{padding:'16px', display:'flex', alignItems:'flex-start', gap:'12px', transition:'all 0.2s', opacity: t.isCompleted ? 0.6 : 1}}>
+          filteredTodos.map(t => (
+            <div 
+              key={t.id} 
+              className="card hover-scale" 
+              style={{
+                padding:'16px 20px', 
+                display:'flex', 
+                alignItems:'flex-start', 
+                gap:'14px', 
+                transition:'all 0.2s', 
+                opacity: t.isCompleted ? 0.6 : 1,
+                borderLeft: t.isCompleted ? '4px solid var(--success)' : '4px solid #7C3AED'
+              }}
+            >
               <div 
                 onClick={() => toggleTodo(t)}
                 style={{
-                  width:'24px', height:'24px', borderRadius:'6px', border:`2px solid ${t.isCompleted ? '#7C3AED' : 'var(--border-strong)'}`,
-                  background: t.isCompleted ? '#7C3AED' : 'transparent', display:'flex', alignItems:'center', justifyContent:'center',
+                  width:'24px', height:'24px', borderRadius:'6px', 
+                  border:`2px solid ${t.isCompleted ? 'var(--success)' : '#7C3AED'}`,
+                  background: t.isCompleted ? 'var(--success)' : 'transparent', 
+                  display:'flex', alignItems:'center', justifyContent:'center',
                   cursor:'pointer', flexShrink:0, marginTop:'2px', transition:'all 0.15s'
                 }}
               >
-                {t.isCompleted && <CheckSquare size={14} color="white" />}
+                {t.isCompleted && <CheckCircle2 size={16} color="white" />}
               </div>
               
               <div style={{flex:1}} onClick={() => toggleTodo(t)}>
-                <p style={{fontSize:'14px', fontWeight:'500', color:'var(--text-1)', textDecoration: t.isCompleted ? 'line-through' : 'none', cursor:'pointer', lineHeight:'1.5'}}>
+                <div style={{display:'flex', alignItems:'center', gap:'8px', marginBottom:'4px', flexWrap:'wrap'}}>
+                  {getPriorityBadge(t.priority)}
+                  <span style={{fontSize:'11px', color:'var(--text-3)'}}>• {getCategoryLabel(t.category)}</span>
+                </div>
+
+                <p style={{
+                  fontSize:'14.5px', fontWeight:'600', color:'var(--text-1)', 
+                  textDecoration: t.isCompleted ? 'line-through' : 'none', 
+                  cursor:'pointer', lineHeight:'1.4'
+                }}>
                   {t.title}
                 </p>
+
+                {t.notes && (
+                  <p style={{fontSize:'12px', color:'var(--text-3)', marginTop:'4px'}}>{t.notes}</p>
+                )}
               </div>
 
-              <button onClick={() => onDeleteTodo(t.id)} className="btn btn-ghost btn-sm" style={{padding:0, width:'32px', height:'32px', color:'var(--error)', flexShrink:0}}>
+              <button 
+                onClick={() => onDeleteTodo(t.id)} 
+                className="btn btn-ghost btn-sm" 
+                style={{padding:0, width:'32px', height:'32px', color:'var(--error)', flexShrink:0}}
+              >
                 <Trash2 size={16} />
               </button>
             </div>
           ))
         )}
       </div>
+
+      {/* ── MODAL ADD TASK ── */}
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Tambah Tugas MC Baru">
+        <form onSubmit={handleAdd} style={{display:'flex', flexDirection:'column', gap:'16px'}}>
+          <div>
+            <label className="input-label">Judul / Detail Tugas *</label>
+            <input 
+              type="text" 
+              required 
+              value={title} 
+              onChange={e => setTitle(e.target.value)} 
+              className="input-field" 
+              placeholder="Contoh: Fitting Dresscode H-3" 
+            />
+          </div>
+
+          <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px'}}>
+            <div>
+              <label className="input-label">Kategori</label>
+              <select value={category} onChange={e => setCategory(e.target.value as any)} className="input-field">
+                <option value="PERSIAPAN">Persiapan Event 🎯</option>
+                <option value="HARI_H">Hari-H Acara 🎤</option>
+                <option value="PASCA_EVENT">Pasca Acara 💼</option>
+                <option value="KARIER">Karier & Portofolio 🚀</option>
+                <option value="UMUM">Catatan Umum 📝</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="input-label">Skala Prioritas</label>
+              <select value={priority} onChange={e => setPriority(e.target.value as any)} className="input-field">
+                <option value="TINGGI">Tinggi (High) 🚨</option>
+                <option value="SEDANG">Sedang (Medium) ⚡</option>
+                <option value="RENDAH">Rendah (Low) ☕</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label className="input-label">Catatan Tambahan (Optional)</label>
+            <input 
+              type="text" 
+              value={notes} 
+              onChange={e => setNotes(e.target.value)} 
+              className="input-field" 
+              placeholder="Catatan kecil teknis..." 
+            />
+          </div>
+
+          <button 
+            type="submit" 
+            disabled={saving} 
+            className="btn btn-primary btn-full btn-lg" 
+            style={{background:'#7C3AED', borderColor:'#7C3AED', marginTop:'8px'}}
+          >
+            {saving ? 'Menyimpan...' : 'Simpan Tugas 🚀'}
+          </button>
+        </form>
+      </Modal>
 
     </div>
   );

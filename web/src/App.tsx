@@ -62,16 +62,7 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   ) activeTab = 'more';
 
   const isDayMode = path.startsWith('/daymode');
-  const hideBottomNav = path.startsWith('/booking/') ||
-    path.startsWith('/invoice') ||
-    path.startsWith('/price-list') ||
-    path.startsWith('/profile') ||
-    path.startsWith('/analytics') ||
-    path.startsWith('/followup') ||
-    path.startsWith('/todo') ||
-    path.startsWith('/notifications') ||
-    path.startsWith('/quick-action') ||
-    path.startsWith('/testimonial');
+  const hideBottomNav = isDayMode;
 
   const getPageTitle = () => {
     if (path.startsWith('/booking/')) return 'Detail Job Acara';
@@ -408,7 +399,7 @@ const InvoicePageWrapper = () => {
   const booking = id
     ? ctx.bookings.find((b: Booking) => b.id === id)
     : ctx.bookings[0] || null;
-  return <InvoicePage booking={booking} payments={ctx.payments} onBack={() => navigate(-1)} />;
+  return <InvoicePage booking={booking} allBookings={ctx.bookings} payments={ctx.payments} onBack={() => navigate(-1)} />;
 };
 
 const DayModeWrapper = () => {
@@ -441,6 +432,9 @@ const PriceListPageWrapper = () => {
       onBack={() => navigate(-1)}
       onSaveRateCard={ctx.handleSaveRateCard}
       onDeleteRateCard={ctx.handleDeleteRateCard}
+      onUseForJob={(card) => {
+        ctx.setShowWizardModal(true);
+      }}
     />
   );
 };

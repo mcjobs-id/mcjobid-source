@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { Calendar, Plus, ArrowRight, Mic, MessageSquare, HelpCircle, TrendingUp, TrendingDown, MapPin, ChevronRight, DollarSign } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Calendar, Plus, ArrowRight, Mic, MessageSquare, HelpCircle, TrendingUp, TrendingDown, MapPin, ChevronRight, DollarSign, Zap, UserPlus, FileText, Tag, BarChart2, CheckSquare, Bell, User, X } from 'lucide-react';
 import type { Booking } from '../types';
 import { useAuth } from '../context/AuthContext';
+import { getStoredQaConfig, type QuickActionConfig } from './QuickActionSettingsPage';
 
 interface HomePageProps {
   bookings: Booking[];
@@ -35,6 +36,14 @@ export const HomePage: React.FC<HomePageProps> = ({
 }) => {
   const { userProfile } = useAuth();
   const [selectedFilter, setSelectedFilter] = useState<TimeFilter>('THIS_MONTH');
+  
+  // Floating Speed Dial state
+  const [qaOpen, setQaOpen] = useState(false);
+  const [qaConfig, setQaConfig] = useState<QuickActionConfig>(getStoredQaConfig);
+
+  useEffect(() => {
+    setQaConfig(getStoredQaConfig());
+  }, []);
 
   const todayStr = new Date().toISOString().split('T')[0];
   const todayBooking = bookings.find(b => b.eventDate === todayStr && b.status !== 'CANCELLED');
@@ -63,8 +72,20 @@ export const HomePage: React.FC<HomePageProps> = ({
   const bulanMap = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
   const greeting = now.getHours() < 12 ? 'Selamat pagi' : now.getHours() < 17 ? 'Selamat siang' : 'Selamat malam';
 
+  // Speed Dial items based on configuration
+  const fabItems = [
+    { key: 'addJob', label: 'Catat Job Baru', icon: Plus, color: 'var(--primary)', onClick: onOpenCreateJob },
+    { key: 'addClient', label: 'Tambah Klien Baru', icon: UserPlus, color: '#2563EB', onClick: () => onNavigateTab('clients') },
+    { key: 'addPayment', label: 'Catat Pelunasan/DP', icon: DollarSign, color: 'var(--success)', onClick: () => onNavigateTab('finance') },
+    { key: 'invoice', label: 'Generator Invoice', icon: FileText, color: '#0369A1', onClick: () => onNavigateTab('invoice') },
+    { key: 'rateCard', label: 'Rate Card', icon: Tag, color: 'var(--primary)', onClick: () => onNavigateTab('price-list') },
+    { key: 'analytics', label: 'Analisis Bisnis', icon: BarChart2, color: 'var(--success)', onClick: () => onNavigateTab('analytics') },
+    { key: 'followUp', label: 'Follow Up Klien', icon: MessageSquare, color: '#2563EB', onClick: () => onNavigateTab('followup') },
+    { key: 'todo', label: 'Daftar Tugas', icon: CheckSquare, color: '#7C3AED', onClick: () => onNavigateTab('todo') },
+  ].filter(item => (qaConfig as any)[item.key]);
+
   return (
-    <div className="animate-fade-in" style={{maxWidth:'1280px', margin:'0 auto', display:'flex', flexDirection:'column', gap:'24px', paddingBottom:'16px'}}>
+    <div className="animate-fade-in" style={{maxWidth:'1280px', margin:'0 auto', display:'flex', flexDirection:'column', gap:'24px', paddingBottom:'16px', position:'relative'}}>
 
       {/* ── GREETING ROW ── */}
       <div style={{display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:'16px', flexWrap:'wrap'}}>
@@ -325,6 +346,56 @@ export const HomePage: React.FC<HomePageProps> = ({
           </div>
         </div>
       </div>
+
+      {/* ── FLOATING SPEED DIAL FAB (Android quick action) ── */}
+      {qaConfig.masterEnabled && fabItems.length > 0 && (
+        <div style={{position:'fixed', bottom:'80px', right:'24px', zIndex:900, display:'flex', flexDirection:'column', alignItems:'flex-end', gap:'10px'}}>
+          {/* Expanded Speed Dial Items */}
+          {qaOpen && (
+            <div className="animate-fade-in" style={{display:'flex', flexDirection:'column', alignItems:'flex-end', gap:'10px', marginBottom:'4px'}}>
+              {fabItems.map(item => {
+                const Icon = item.icon;
+                return (
+                  <div 
+                    key={item.key} 
+                    onClick={() => { setQaOpen(false); item.onClick(); }}
+                    style={{display:'flex', alignItems:'center', gap:'10px', cursor:'pointer'}}
+                  >
+                    <span style={{
+                      fontSize:'12px', fontWeight:'700', background:'var(--bg-surface)', 
+                      color:'var(--text-1)', padding:'6px 12px', borderRadius:'8px', 
+                      boxShadow:'var(--shadow-md)', border:'1px solid var(--border)'
+                    }}>
+                      {item.label}
+                    </span>
+                    <div style={{
+                      width:'42px', height:'42px', borderRadius:'50%', background:'white',
+                      boxShadow:'var(--shadow-md)', border:'1px solid var(--border)',
+                      display:'flex', alignItems:'center', justifyContent:'center'
+                    }}>
+                      <Icon size={18} color={item.color} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Main FAB Trigger Button */}
+          <button
+            onClick={() => setQaOpen(!qaOpen)}
+            style={{
+              width:'56px', height:'56px', borderRadius:'50%', background:'var(--primary)',
+              color:'white', display:'flex', alignItems:'center', justifyContent:'center',
+              boxShadow:'0 10px 25px rgba(79,70,229,0.4)', border:'none', cursor:'pointer',
+              transition:'transform 0.2s ease', transform: qaOpen ? 'rotate(45deg)' : 'none'
+            }}
+            aria-label="Pintasan cepat"
+          >
+            <Plus size={28} />
+          </button>
+        </div>
+      )}
 
       <style>{`
         @media (min-width: 1024px) {

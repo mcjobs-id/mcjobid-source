@@ -50,7 +50,7 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }
             <X size={16} />
           </button>
         </div>
-        <div>{children}</div>
+        <div className="modal-body">{children}</div>
       </div>
     </div>
   );

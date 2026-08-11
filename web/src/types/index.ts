@@ -187,8 +187,11 @@ export interface RateCard {
   category?: string;
   price: number;
   duration?: string;
+  durationHours?: number;
   features?: string[];
   inclusions?: string[];
+  addOns?: string[];
+  terms?: string;
   notes?: string;
   description?: string;
   isPopular?: boolean;
@@ -222,9 +225,11 @@ export interface TodoItem {
   id: string;
   ownerId: string;
   title: string;
+  category?: 'PERSIAPAN' | 'HARI_H' | 'PASCA_EVENT' | 'KARIER' | 'UMUM' | string;
+  notes?: string;
   dueDate?: string;
   isCompleted: boolean;
-  priority?: 'low' | 'medium' | 'high';
+  priority?: 'low' | 'medium' | 'high' | 'TINGGI' | 'SEDANG' | 'RENDAH' | string;
   createdAt?: string;
 }
 
