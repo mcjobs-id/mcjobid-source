@@ -85,7 +85,7 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     if (path.startsWith('/quick-action')) return 'Pengaturan Pintasan';
     if (path.startsWith('/testimonial')) return 'Testimoni Klien';
     switch (activeTab) {
-      case 'home': return 'Dashboard mcjob.id';
+      case 'home': return 'mcjob.id';
       case 'agenda': return 'Agenda Acara';
       case 'clients': return 'Database Klien & WO';
       case 'finance': return 'Keuangan & Cashflow';
