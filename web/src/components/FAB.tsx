@@ -31,10 +31,10 @@ export const FAB: React.FC<FABProps> = ({
       <button
         onClick={onClick}
         aria-label={label}
+        title={label}
         className="fab-button animate-fade-in"
       >
-        <Icon size={20} color="#FFFFFF" />
-        <span style={{ whiteSpace: 'nowrap' }}>{label}</span>
+        <Icon size={22} color="#FFFFFF" />
       </button>,
       document.body
     );
@@ -51,8 +51,7 @@ export const FAB: React.FC<FABProps> = ({
             position: 'fixed',
             inset: 0,
             zIndex: 95,
-            background: 'rgba(15, 23, 42, 0.25)',
-            backdropFilter: 'blur(2px)'
+            background: 'rgba(15, 23, 42, 0.45)'
           }}
         />
       )}
@@ -67,7 +66,11 @@ export const FAB: React.FC<FABProps> = ({
               flexDirection: 'column',
               alignItems: 'flex-end',
               gap: '10px',
-              marginBottom: '6px'
+              marginBottom: '6px',
+              maxHeight: 'calc(100vh - 120px)',
+              overflowY: 'auto',
+              paddingRight: '2px',
+              paddingLeft: '6px'
             }}
           >
             {items.map(item => {
@@ -128,9 +131,9 @@ export const FAB: React.FC<FABProps> = ({
           onClick={() => setIsOpen(!isOpen)}
           aria-label={label}
           className="fab-button-inner"
+          title={label}
         >
-          {isOpen ? <X size={20} color="#FFFFFF" /> : <Icon size={20} color="#FFFFFF" />}
-          <span style={{ whiteSpace: 'nowrap' }}>{isOpen ? 'Tutup' : label}</span>
+          {isOpen ? <X size={22} color="#FFFFFF" /> : <Icon size={22} color="#FFFFFF" />}
         </button>
       </div>
     </>,

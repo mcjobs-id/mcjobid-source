@@ -3,6 +3,7 @@ import { ArrowLeft, CheckSquare, Plus, Trash2, Sparkles, Filter, AlertCircle, Ca
 import type { TodoItem } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { FAB } from '../components/FAB';
+import { ConfirmModal } from '../components/ConfirmModal';
 
 interface TodoPageProps {
   todos: TodoItem[];
@@ -39,6 +40,23 @@ export const TodoPage: React.FC<TodoPageProps> = ({ todos, onSaveTodo, onDeleteT
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
 
+  // Confirm Modal state
+  const [confirmConfig, setConfirmConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    confirmText: string;
+    type: 'primary' | 'danger' | 'warning';
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    confirmText: 'Ya',
+    type: 'primary',
+    onConfirm: () => {}
+  });
+
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
@@ -66,22 +84,29 @@ export const TodoPage: React.FC<TodoPageProps> = ({ todos, onSaveTodo, onDeleteT
     }
   };
 
-  const handleApplyTemplates = async () => {
+  const handleApplyTemplates = () => {
     if (!currentUser?.uid) return;
-    if (!confirm('Muat 8 checklist tugas standar MC ke daftar tugas Anda?')) return;
-    
-    for (const item of PREDEFINED_MC_TEMPLATES) {
-      const newTodo: TodoItem = {
-        id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-        ownerId: currentUser.uid,
-        title: item.title,
-        category: item.category,
-        priority: item.priority,
-        isCompleted: false,
-        createdAt: new Date().toISOString()
-      };
-      await onSaveTodo(newTodo);
-    }
+    setConfirmConfig({
+      isOpen: true,
+      title: 'Muat Template MC',
+      message: 'Muat 8 checklist tugas standar MC ke daftar tugas Anda?',
+      confirmText: 'Ya, Muat Sekarang',
+      type: 'primary',
+      onConfirm: async () => {
+        for (const item of PREDEFINED_MC_TEMPLATES) {
+          const newTodo: TodoItem = {
+            id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+            ownerId: currentUser.uid,
+            title: item.title,
+            category: item.category,
+            priority: item.priority,
+            isCompleted: false,
+            createdAt: new Date().toISOString()
+          };
+          await onSaveTodo(newTodo);
+        }
+      }
+    });
   };
 
   const toggleTodo = async (todo: TodoItem) => {
@@ -130,20 +155,6 @@ export const TodoPage: React.FC<TodoPageProps> = ({ todos, onSaveTodo, onDeleteT
   if (viewMode === 'form') {
     return (
       <div className="animate-fade-in" style={{maxWidth:'800px', margin:'0 auto', paddingBottom:'32px'}}>
-        <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'24px'}}>
-          <div style={{display:'flex', alignItems:'center', gap:'12px'}}>
-            <button onClick={() => setViewMode('list')} className="btn btn-ghost" style={{padding:'0 8px', marginLeft:'-8px'}}>
-              <ArrowLeft size={18} />
-            </button>
-            <div>
-              <h1 className="page-title">Tambah Tugas MC Baru</h1>
-              <p className="page-subtitle">Buat checklist tugas operasional perform atau karier MC Anda.</p>
-            </div>
-          </div>
-          <button onClick={() => setViewMode('list')} className="btn btn-secondary btn-sm">
-            Batal
-          </button>
-        </div>
 
         <form onSubmit={handleAdd} style={{display:'flex', flexDirection:'column', gap:'20px'}}>
           <div className="card" style={{padding:'24px', display:'flex', flexDirection:'column', gap:'16px'}}>
@@ -378,7 +389,16 @@ export const TodoPage: React.FC<TodoPageProps> = ({ todos, onSaveTodo, onDeleteT
               </div>
 
               <button 
-                onClick={() => onDeleteTodo(t.id)} 
+                onClick={() => {
+                  setConfirmConfig({
+                    isOpen: true,
+                    title: 'Hapus Tugas',
+                    message: `Hapus tugas "${t.title}"?`,
+                    confirmText: 'Ya, Hapus',
+                    type: 'danger',
+                    onConfirm: () => onDeleteTodo(t.id)
+                  });
+                }} 
                 className="btn btn-ghost btn-sm" 
                 style={{padding:0, width:'32px', height:'32px', color:'var(--error)', flexShrink:0}}
               >
@@ -393,6 +413,17 @@ export const TodoPage: React.FC<TodoPageProps> = ({ todos, onSaveTodo, onDeleteT
       {viewMode === 'list' && (
         <FAB label="Tugas MC" items={todoFabItems} />
       )}
+
+      {/* ── CUSTOM CONFIRMATION MODAL ── */}
+      <ConfirmModal
+        isOpen={confirmConfig.isOpen}
+        onClose={() => setConfirmConfig(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmConfig.onConfirm}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        confirmText={confirmConfig.confirmText}
+        type={confirmConfig.type}
+      />
     </div>
   );
 };

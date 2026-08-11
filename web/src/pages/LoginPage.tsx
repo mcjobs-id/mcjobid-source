@@ -109,7 +109,7 @@ export const LoginPage: React.FC = () => {
           <div style={{position: 'relative', zIndex: 1}}>
             {/* Brand */}
             <div style={{display:'flex', alignItems:'center', gap: '12px', marginBottom: '64px'}}>
-              <div style={{width:'40px', height:'40px', borderRadius:'12px', background:'rgba(255,255,255,0.15)', backdropFilter:'blur(8px)', border:'1px solid rgba(255,255,255,0.2)', display:'flex', alignItems:'center', justifyContent:'center'}}>
+              <div style={{width:'40px', height:'40px', borderRadius:'12px', background:'rgba(255,255,255,0.15)', border:'1px solid rgba(255,255,255,0.2)', display:'flex', alignItems:'center', justifyContent:'center'}}>
                 <Mic size={20} color="white" />
               </div>
               <div>
@@ -135,7 +135,7 @@ export const LoginPage: React.FC = () => {
                 const Icon = f.icon;
                 return (
                   <div key={i} style={{display:'flex', alignItems:'flex-start', gap:'14px'}}>
-                    <div style={{width:'36px', height:'36px', borderRadius:'10px', background:'rgba(255,255,255,0.12)', backdropFilter:'blur(8px)', border:'1px solid rgba(255,255,255,0.15)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0}}>
+                    <div style={{width:'36px', height:'36px', borderRadius:'10px', background:'rgba(255,255,255,0.12)', border:'1px solid rgba(255,255,255,0.15)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0}}>
                       <Icon size={16} color="white" />
                     </div>
                     <div>
@@ -149,7 +149,7 @@ export const LoginPage: React.FC = () => {
           </div>
 
           {/* Hero Bottom: Testimonial/Trust Badge */}
-          <div style={{position:'relative', zIndex:1, padding:'20px', borderRadius:'16px', background:'rgba(255,255,255,0.08)', backdropFilter:'blur(8px)', border:'1px solid rgba(255,255,255,0.12)'}}>
+          <div style={{position:'relative', zIndex:1, padding:'20px', borderRadius:'16px', background:'rgba(255,255,255,0.08)', border:'1px solid rgba(255,255,255,0.12)'}}>
             <div style={{display:'flex', alignItems:'center', gap:'10px', marginBottom:'10px'}}>
               {[1,2,3].map(i => (
                 <div key={i} style={{width:'28px', height:'28px', borderRadius:'50%', background:`rgba(255,255,255,${0.15 + i*0.05})`, border:'2px solid rgba(255,255,255,0.3)', marginLeft: i > 1 ? '-8px' : '0', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'10px', fontWeight:'800', color:'white'}}>

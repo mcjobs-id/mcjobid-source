@@ -116,21 +116,6 @@ export const ClientsPage: React.FC<ClientsPageProps> = ({ clients, onSaveClient,
   if (viewMode === 'form') {
     return (
       <div className="animate-fade-in" style={{ width: '100%', paddingBottom: '40px' }}>
-        
-        {/* Form Page Header */}
-        <div className="page-header" style={{ alignItems: 'center', marginBottom: '20px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <button onClick={() => setViewMode('list')} className="btn btn-ghost" style={{ padding: '0 8px', marginLeft: '-8px' }}>
-              <ArrowLeft size={18} />
-            </button>
-            <div>
-              <h1 className="page-title">
-                {editingClient ? 'Edit Data Klien & WO' : 'Tambah Klien & WO Baru'}
-              </h1>
-              <p className="page-subtitle">Isi formulir kontak klien untuk kemudahan integrasi acara & follow up.</p>
-            </div>
-          </div>
-        </div>
 
         {/* Dedicated Form Card */}
         <div className="card" style={{ padding: '24px' }}>
@@ -149,59 +134,55 @@ export const ClientsPage: React.FC<ClientsPageProps> = ({ clients, onSaveClient,
 
             <div>
               <label className="input-label">Tipe Kategori Klien *</label>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                <button
-                  type="button"
-                  onClick={() => setType('DIRECT_CLIENT')}
-                  style={{
-                    padding: '12px', borderRadius: '12px', fontSize: '13px', fontWeight: '800',
-                    border: `1.5px solid ${type === 'DIRECT_CLIENT' ? 'var(--primary)' : 'var(--border)'}`,
-                    background: type === 'DIRECT_CLIENT' ? 'rgba(79,70,229,0.08)' : 'var(--bg-surface-2)',
-                    color: type === 'DIRECT_CLIENT' ? 'var(--primary)' : 'var(--text-3)',
-                    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
-                  }}
-                >
-                  <User size={16} /> Klien Langsung
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setType('WO')}
-                  style={{
-                    padding: '12px', borderRadius: '12px', fontSize: '13px', fontWeight: '800',
-                    border: `1.5px solid ${type === 'WO' ? 'var(--primary)' : 'var(--border)'}`,
-                    background: type === 'WO' ? 'rgba(79,70,229,0.08)' : 'var(--bg-surface-2)',
-                    color: type === 'WO' ? 'var(--primary)' : 'var(--text-3)',
-                    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
-                  }}
-                >
-                  <Building size={16} /> Wedding Organizer
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setType('EO')}
-                  style={{
-                    padding: '12px', borderRadius: '12px', fontSize: '13px', fontWeight: '800',
-                    border: `1.5px solid ${type === 'EO' ? 'var(--primary)' : 'var(--border)'}`,
-                    background: type === 'EO' ? 'rgba(79,70,229,0.08)' : 'var(--bg-surface-2)',
-                    color: type === 'EO' ? 'var(--primary)' : 'var(--text-3)',
-                    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
-                  }}
-                >
-                  <Users size={16} /> Event Organizer
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setType('OTHER')}
-                  style={{
-                    padding: '12px', borderRadius: '12px', fontSize: '13px', fontWeight: '800',
-                    border: `1.5px solid ${type === 'OTHER' ? 'var(--primary)' : 'var(--border)'}`,
-                    background: type === 'OTHER' ? 'rgba(79,70,229,0.08)' : 'var(--bg-surface-2)',
-                    color: type === 'OTHER' ? 'var(--primary)' : 'var(--text-3)',
-                    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
-                  }}
-                >
-                  <Building size={16} /> Lainnya / Agensi
-                </button>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
+                {[
+                  { key: 'DIRECT_CLIENT', label: 'Klien Langsung', subtitle: 'Perorangan / Pengantin', icon: User },
+                  { key: 'WO', label: 'Wedding Organizer', subtitle: 'Mitra Vendor Pernikahan', icon: Building },
+                  { key: 'EO', label: 'Event Organizer', subtitle: 'Agensi Acara Korporat', icon: Users },
+                  { key: 'OTHER', label: 'Lainnya / Agensi', subtitle: 'Instansi, Brand, & Agen', icon: Building },
+                ].map(item => {
+                  const isSelected = type === item.key;
+                  const IconComp = item.icon;
+                  return (
+                    <button
+                      type="button"
+                      key={item.key}
+                      onClick={() => setType(item.key as any)}
+                      style={{
+                        padding: '14px 16px',
+                        borderRadius: 'var(--radius-lg)',
+                        border: isSelected ? '2px solid var(--primary)' : '1px solid var(--border)',
+                        background: isSelected ? 'linear-gradient(135deg, rgba(79,70,229,0.06) 0%, rgba(99,102,241,0.12) 100%)' : 'var(--bg-surface)',
+                        color: isSelected ? 'var(--primary)' : 'var(--text-1)',
+                        boxShadow: isSelected ? '0 4px 14px -2px rgba(79,70,229,0.22)' : 'var(--shadow-xs)',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                        textAlign: 'left',
+                        transition: 'all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                        transform: isSelected ? 'translateY(-2px)' : 'none'
+                      }}
+                    >
+                      <div style={{
+                        width: '36px', height: '36px', borderRadius: '10px',
+                        background: isSelected ? 'var(--primary)' : 'var(--primary-light)',
+                        color: isSelected ? '#FFFFFF' : 'var(--primary)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+                      }}>
+                        <IconComp size={18} />
+                      </div>
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <span style={{ fontSize: '13px', fontWeight: '800', display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', letterSpacing: '-0.01em' }}>
+                          {item.label}
+                        </span>
+                        <span style={{ fontSize: '11px', color: isSelected ? 'var(--primary)' : 'var(--text-3)', fontWeight: '500', display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {item.subtitle}
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
@@ -302,12 +283,21 @@ export const ClientsPage: React.FC<ClientsPageProps> = ({ clients, onSaveClient,
       {/* Toast */}
       {toastMsg && (
         <div className="animate-fade-in" style={{
-          position: 'fixed', top: '80px', left: '50%', transform: 'translateX(-50%)',
-          zIndex: 9999, background: '#059669', color: 'white', padding: '10px 20px',
-          borderRadius: '30px', fontWeight: '700', fontSize: '13px', boxShadow: '0 4px 16px rgba(0,0,0,0.2)',
-          display: 'flex', alignItems: 'center', gap: '8px'
+          position: 'fixed', bottom: '88px', left: '50%', transform: 'translateX(-50%)',
+          zIndex: 99999, background: '#059669', color: '#FFFFFF', padding: '12px 22px',
+          borderRadius: '9999px', fontWeight: '700', fontSize: '13px',
+          boxShadow: '0 10px 30px -4px rgba(5,150,105,0.45)',
+          display: 'flex', alignItems: 'center', gap: '10px', whiteSpace: 'nowrap',
+          pointerEvents: 'none'
         }}>
-          <Check size={16} /> {toastMsg}
+          <div style={{
+            width: '22px', height: '22px', borderRadius: '50%',
+            background: 'rgba(255,255,255,0.2)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+          }}>
+            <Check size={14} color="#FFFFFF" strokeWidth={3} />
+          </div>
+          <span>{toastMsg}</span>
         </div>
       )}
 

@@ -80,12 +80,12 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     if (path.includes('/quick-action')) return 'Pengaturan Pintasan';
     if (path.includes('/testimonial')) return 'Testimoni Klien';
     switch (activeTab) {
-      case 'home': return 'mcjob.id';
+      case 'home': return 'Beranda';
       case 'agenda': return 'Agenda Acara';
       case 'clients': return 'Database Klien & WO';
       case 'finance': return 'Keuangan & Cashflow';
       case 'more': return 'Menu Lainnya';
-      default: return 'mcjob.id';
+      default: return 'Beranda';
     }
   };
 

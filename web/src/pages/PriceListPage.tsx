@@ -219,23 +219,6 @@ export const PriceListPage: React.FC<PriceListPageProps> = ({
   if (viewMode === 'form') {
     return (
       <div className="animate-fade-in" style={{width:'100%', paddingBottom:'32px'}}>
-        
-        {/* Form Page Header */}
-        <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'24px'}}>
-          <div style={{display:'flex', alignItems:'center', gap:'12px'}}>
-            <button onClick={() => setViewMode('list')} className="btn btn-ghost" style={{padding:'0 8px', marginLeft:'-8px'}}>
-              <ArrowLeft size={18} />
-            </button>
-            <div>
-              <h1 className="page-title">{editingCard ? 'Edit Paket Harga' : 'Tambah Paket Harga Baru'}</h1>
-              <p className="page-subtitle">Isi rincian fasilitas dan penawaran paket harga MC Anda.</p>
-            </div>
-          </div>
-
-          <button onClick={() => setViewMode('list')} className="btn btn-secondary btn-sm">
-            Batal
-          </button>
-        </div>
 
         {formError && (
           <div style={{

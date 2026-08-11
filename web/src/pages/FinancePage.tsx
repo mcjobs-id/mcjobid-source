@@ -233,15 +233,24 @@ export const FinancePage: React.FC<FinancePageProps> = ({
   return (
     <div className="animate-fade-in" style={{ width: '100%', paddingBottom: '40px' }}>
       
-      {/* Toast Notification */}
+      {/* Toast */}
       {toastMsg && (
         <div className="animate-fade-in" style={{
-          position: 'fixed', top: '80px', left: '50%', transform: 'translateX(-50%)',
-          zIndex: 9999, background: '#059669', color: 'white', padding: '10px 20px',
-          borderRadius: '30px', fontWeight: '700', fontSize: '13px', boxShadow: '0 4px 16px rgba(0,0,0,0.2)',
-          display: 'flex', alignItems: 'center', gap: '8px'
+          position: 'fixed', bottom: '88px', left: '50%', transform: 'translateX(-50%)',
+          zIndex: 99999, background: '#059669', color: '#FFFFFF', padding: '12px 22px',
+          borderRadius: '9999px', fontWeight: '700', fontSize: '13px',
+          boxShadow: '0 10px 30px -4px rgba(5,150,105,0.45)',
+          display: 'flex', alignItems: 'center', gap: '10px', whiteSpace: 'nowrap',
+          pointerEvents: 'none'
         }}>
-          <Check size={16} /> {toastMsg}
+          <div style={{
+            width: '22px', height: '22px', borderRadius: '50%',
+            background: 'rgba(255,255,255,0.2)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+          }}>
+            <Check size={14} color="#FFFFFF" strokeWidth={3} />
+          </div>
+          <span>{toastMsg}</span>
         </div>
       )}
 

@@ -43,7 +43,8 @@ export const HomePage: React.FC<HomePageProps> = ({
     setQaConfig(getStoredQaConfig());
   }, []);
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const now = new Date();
+  const todayStr = now.toISOString().split('T')[0];
   const todayBooking = bookings.find(b => b.eventDate === todayStr && b.status !== 'CANCELLED');
 
   const upcomingBookings = bookings
@@ -53,7 +54,6 @@ export const HomePage: React.FC<HomePageProps> = ({
   const filteredBookings = bookings.filter(b => {
     if (b.status === 'CANCELLED') return false;
     const bDate = new Date(b.eventDate);
-    const now = new Date();
     if (selectedFilter === 'TODAY') return b.eventDate === todayStr;
     if (selectedFilter === 'THIS_MONTH') return bDate.getMonth() === now.getMonth() && bDate.getFullYear() === now.getFullYear();
     if (selectedFilter === 'THIS_YEAR') return bDate.getFullYear() === now.getFullYear();
@@ -67,11 +67,17 @@ export const HomePage: React.FC<HomePageProps> = ({
   const paidJobs    = filteredBookings.filter(b => b.paymentStatus === 'PAID').length;
   const paidRatio   = totalHonor > 0 ? Math.round((totalPaid / totalHonor) * 100) : 0;
 
-  const now = new Date();
   const bulanMap = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
   const greeting = now.getHours() < 12 ? 'Selamat Pagi' : now.getHours() < 17 ? 'Selamat Siang' : 'Selamat Malam';
   const displayName = userProfile?.stageName || userProfile?.displayName || currentUser?.displayName || 'MC Professional';
   const userPhoto = userProfile?.photoUrl || userProfile?.photoUri || currentUser?.photoURL;
+
+  const hariMap = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+  const dayName = hariMap[now.getDay()];
+  const dayNum = now.getDate();
+  const monthName = bulanMap[now.getMonth()];
+  const yearNum = now.getFullYear();
+  const formattedFullDate = `${dayName}, ${dayNum} ${monthName} ${yearNum}`;
 
   // Speed Dial items
   const fabItems = [
@@ -88,26 +94,96 @@ export const HomePage: React.FC<HomePageProps> = ({
   return (
     <div className="animate-fade-in" style={{width:'100%', display:'flex', flexDirection:'column', gap:'14px', paddingBottom:'16px'}}>
 
-      {/* ── HEADER: Greeting + Avatar ── */}
-      <div style={{display:'flex', alignItems:'center', gap:'12px', justifyContent:'space-between'}}>
-        <div style={{flex:1, minWidth:0}}>
-          <p style={{fontSize:'11px', fontWeight:'700', color:'var(--text-4)', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:'2px'}}>{greeting}</p>
-          <h1 style={{fontSize:'clamp(17px,2.5vw,22px)', fontWeight:'800', color:'var(--text-1)', letterSpacing:'-0.02em', lineHeight:'1.2', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>
-            {displayName} 👋
+      {/* ── POLISHED HEADER WELCOME BANNER ── */}
+      <div 
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '16px',
+          padding: '20px 24px',
+          background: 'var(--bg-surface)',
+          borderRadius: 'var(--radius-xl)',
+          border: '1px solid var(--border)',
+          boxShadow: 'var(--shadow-sm)',
+          position: 'relative',
+          overflow: 'hidden'
+        }}
+      >
+        {/* Subtle background glow */}
+        <div style={{
+          position: 'absolute',
+          top: '-40px',
+          right: '-40px',
+          width: '180px',
+          height: '180px',
+          borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(79, 70, 229, 0.08) 0%, rgba(79, 70, 229, 0) 70%)',
+          pointerEvents: 'none'
+        }} />
+
+        <div style={{ flex: 1, minWidth: 0, zIndex: 1 }}>
+          {/* Date & Greeting Badge Row */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '8px' }}>
+            <span style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '5px',
+              padding: '3px 10px',
+              borderRadius: '9999px',
+              background: 'var(--primary-light)',
+              color: 'var(--primary)',
+              fontSize: '11px',
+              fontWeight: '700',
+              border: '1px solid rgba(79, 70, 229, 0.15)'
+            }}>
+              <Calendar size={12} />
+              {formattedFullDate}
+            </span>
+            <span style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '5px',
+              padding: '3px 10px',
+              borderRadius: '9999px',
+              background: 'var(--bg-surface-2)',
+              color: 'var(--text-3)',
+              fontSize: '11px',
+              fontWeight: '600',
+              border: '1px solid var(--border)'
+            }}>
+              <Clock size={12} />
+              {greeting}
+            </span>
+          </div>
+
+          {/* Main Title & Name */}
+          <h1 style={{
+            fontSize: 'clamp(20px, 3vw, 26px)',
+            fontWeight: '800',
+            color: 'var(--text-1)',
+            letterSpacing: '-0.03em',
+            lineHeight: '1.25',
+            margin: 0
+          }}>
+            <span style={{ fontWeight: '500', color: 'var(--text-3)' }}>{greeting}, </span>
+            <span style={{ color: 'var(--primary)', fontWeight: '800' }}>{displayName}</span>
+            <span style={{ marginLeft: '6px' }}>👋</span>
           </h1>
-          <p style={{fontSize:'12px', color:'var(--text-3)', marginTop:'2px'}}>
-            {bulanMap[now.getMonth()]} {now.getFullYear()} — <strong style={{color:'var(--primary)'}}>{upcomingBookings.length}</strong> job mendatang
+
+          {/* Subtitle / Status */}
+          <p style={{
+            fontSize: '12.5px',
+            color: 'var(--text-3)',
+            marginTop: '6px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            fontWeight: '500'
+          }}>
+            <span>Ada <strong style={{ color: 'var(--text-1)', fontWeight: '700' }}>{upcomingBookings.length} job mendatang</strong> di agenda Anda.</span>
           </p>
         </div>
-        <button
-          onClick={() => onNavigateTab('profile')}
-          style={{flexShrink:0, width:'48px', height:'48px', borderRadius:'50%', overflow:'hidden', border:'2px solid var(--primary)', cursor:'pointer', background:'var(--primary-light)'}}
-        >
-          {userPhoto
-            ? <img src={userPhoto} referrerPolicy="no-referrer" alt="profil" style={{width:'100%', height:'100%', objectFit:'cover'}} />
-            : <span style={{width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'18px', fontWeight:'800', color:'var(--primary)'}}>{displayName.charAt(0).toUpperCase()}</span>
-          }
-        </button>
       </div>
 
       {/* ── TODAY'S EVENT BANNER ── */}
