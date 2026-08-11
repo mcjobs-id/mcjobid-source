@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Plus, Tag, Trash2, Edit2, Copy, CheckCircle2, Share2, Search, MessageSquare, ExternalLink, Calendar, User } from 'lucide-react';
+import { ArrowLeft, Plus, Tag, Trash2, Edit2, Copy, CheckCircle2, Share2, Search, MessageSquare, ExternalLink, Calendar, User, Save } from 'lucide-react';
 import type { RateCard } from '../types';
 import { useAuth } from '../context/AuthContext';
-import { Modal } from '../components/Modal';
 
 interface PriceListPageProps {
   onBack: () => void;
@@ -23,14 +22,15 @@ export const PriceListPage: React.FC<PriceListPageProps> = ({
 }) => {
   const { currentUser, userProfile } = useAuth();
   
+  // Page view mode: 'list' (Katalog) or 'form' (Halaman Tambah/Edit Paket)
+  const [viewMode, setViewMode] = useState<'list' | 'form'>('list');
+  
   // Filtering states
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Semua');
 
-  // Add/Edit Modal state
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  // Add/Edit Form state
   const [editingCard, setEditingCard] = useState<RateCard | null>(null);
-  
   const [name, setName] = useState('');
   const [category, setCategory] = useState('Wedding');
   const [price, setPrice] = useState<number | ''>('');
@@ -41,13 +41,13 @@ export const PriceListPage: React.FC<PriceListPageProps> = ({
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
 
-  // WhatsApp Quote Modal state
+  // WhatsApp Quote Modal/Sheet state
   const [shareModalCard, setShareModalCard] = useState<RateCard | null>(null);
   const [clientName, setClientName] = useState('');
   const [eventDate, setEventDate] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  const openModal = (card?: RateCard) => {
+  const openFormScreen = (card?: RateCard) => {
     if (card) {
       setEditingCard(card);
       setName(card.name || card.title || '');
@@ -69,7 +69,7 @@ export const PriceListPage: React.FC<PriceListPageProps> = ({
       setTerms('');
       setNotes('');
     }
-    setIsModalOpen(true);
+    setViewMode('form');
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -101,7 +101,7 @@ export const PriceListPage: React.FC<PriceListPageProps> = ({
       if (onSaveRateCard) {
         await onSaveRateCard(cardData);
       }
-      setIsModalOpen(false);
+      setViewMode('list');
     } catch (err) {
       console.error(err);
     } finally {
@@ -187,8 +187,161 @@ export const PriceListPage: React.FC<PriceListPageProps> = ({
     return matchesCategory && matchesSearch;
   });
 
+  // ── RENDER HALAMAN TAMBAH / EDIT PAKET (DEDICATED FORM PAGE) ──
+  if (viewMode === 'form') {
+    return (
+      <div className="animate-fade-in" style={{maxWidth:'800px', margin:'0 auto', paddingBottom:'32px'}}>
+        
+        {/* Form Page Header */}
+        <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'24px'}}>
+          <div style={{display:'flex', alignItems:'center', gap:'12px'}}>
+            <button onClick={() => setViewMode('list')} className="btn btn-ghost" style={{padding:'0 8px', marginLeft:'-8px'}}>
+              <ArrowLeft size={18} />
+            </button>
+            <div>
+              <h1 className="page-title">{editingCard ? 'Edit Paket Harga' : 'Tambah Paket Harga Baru'}</h1>
+              <p className="page-subtitle">Isi rincian fasilitas dan penawaran paket harga MC Anda.</p>
+            </div>
+          </div>
+
+          <button onClick={() => setViewMode('list')} className="btn btn-secondary btn-sm">
+            Batal
+          </button>
+        </div>
+
+        {/* Dedicated Form Body */}
+        <form onSubmit={handleSave} style={{display:'flex', flexDirection:'column', gap:'20px'}}>
+          
+          <div className="card" style={{padding:'24px', display:'flex', flexDirection:'column', gap:'16px'}}>
+            <h3 style={{fontSize:'15px', fontWeight:'700', color:'var(--text-1)', marginBottom:'4px'}}>Informasi Utama Paket</h3>
+            
+            <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(240px, 1fr))', gap:'16px'}}>
+              <div>
+                <label className="input-label">Nama Paket Harga *</label>
+                <input 
+                  type="text" 
+                  required 
+                  value={name} 
+                  onChange={e => setName(e.target.value)} 
+                  className="input-field" 
+                  placeholder="Contoh: Gold Wedding MC" 
+                />
+              </div>
+
+              <div>
+                <label className="input-label">Kategori Event *</label>
+                <select value={category} onChange={e => setCategory(e.target.value)} className="input-field">
+                  {CATEGORIES.filter(c => c !== 'Semua').map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+            </div>
+
+            <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(240px, 1fr))', gap:'16px'}}>
+              <div>
+                <label className="input-label">Harga Paket (Rp) *</label>
+                <input 
+                  type="number" 
+                  required 
+                  value={price} 
+                  onChange={e => setPrice(Number(e.target.value))} 
+                  className="input-field" 
+                  placeholder="3500000" 
+                  style={{fontWeight:'700', color:'var(--primary)', fontSize:'16px'}} 
+                />
+              </div>
+
+              <div>
+                <label className="input-label">Durasi Acara (Jam)</label>
+                <input 
+                  type="number" 
+                  step="0.5" 
+                  value={durationHours} 
+                  onChange={e => setDurationHours(Number(e.target.value))} 
+                  className="input-field" 
+                  placeholder="3" 
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="card" style={{padding:'24px', display:'flex', flexDirection:'column', gap:'16px'}}>
+            <h3 style={{fontSize:'15px', fontWeight:'700', color:'var(--text-1)', marginBottom:'4px'}}>Detail Layanan & Fasilitas</h3>
+
+            <div>
+              <label className="input-label">Fasilitas Termasuk / Inklusi (1 Poin Per Baris) *</label>
+              <textarea 
+                required 
+                value={features} 
+                onChange={e => setFeatures(e.target.value)} 
+                className="input-field" 
+                style={{height:'120px', padding:'12px', resize:'vertical', lineHeight:'1.6'}} 
+                placeholder="MC Resepsi Pernikahan (Max 3 Jam)&#10;Meeting Koordinasi H-7 dengan WO&#10;Free Konsultasi Rundown & Konsep" 
+              />
+              <p className="input-hint" style={{marginTop:'4px'}}>Tekan Enter (baris baru) untuk menambah fasilitas checklist berikutnya.</p>
+            </div>
+
+            <div>
+              <label className="input-label">Opsi Tambahan / Add-ons (Optional)</label>
+              <textarea 
+                value={addOns} 
+                onChange={e => setAddOns(e.target.value)} 
+                className="input-field" 
+                style={{height:'80px', padding:'12px', resize:'vertical', lineHeight:'1.6'}} 
+                placeholder="MC Akad Tambahan (+Rp 500.000)&#10;Overtime per jam (+Rp 300.000)" 
+              />
+            </div>
+          </div>
+
+          <div className="card" style={{padding:'24px', display:'flex', flexDirection:'column', gap:'16px'}}>
+            <h3 style={{fontSize:'15px', fontWeight:'700', color:'var(--text-1)', marginBottom:'4px'}}>Syarat & Catatan</h3>
+
+            <div>
+              <label className="input-label">Syarat & Ketentuan Booking</label>
+              <input 
+                type="text" 
+                value={terms} 
+                onChange={e => setTerms(e.target.value)} 
+                className="input-field" 
+                placeholder="DP 30% untuk penguncian jadwal, pelunasan H-3 acara" 
+              />
+            </div>
+
+            <div>
+              <label className="input-label">Catatan Tambahan</label>
+              <input 
+                type="text" 
+                value={notes} 
+                onChange={e => setNotes(e.target.value)} 
+                className="input-field" 
+                placeholder="Harga belum termasuk akomodasi & transport luar kota" 
+              />
+            </div>
+          </div>
+
+          <div style={{display:'flex', gap:'12px', marginTop:'8px'}}>
+            <button 
+              type="button" 
+              onClick={() => setViewMode('list')} 
+              className="btn btn-secondary btn-full btn-lg"
+            >
+              Batal
+            </button>
+            <button 
+              type="submit" 
+              disabled={saving} 
+              className="btn btn-primary btn-full btn-lg"
+            >
+              <Save size={16} /> {saving ? 'Menyimpan Paket...' : 'Simpan Paket Harga 🚀'}
+            </button>
+          </div>
+        </form>
+      </div>
+    );
+  }
+
+  // ── RENDER HALAMAN KATALOG RATE CARD (LIST VIEW) ──
   return (
-    <div className="animate-fade-in" style={{maxWidth:'1000px', margin:'0 auto', paddingBottom:'24px'}}>
+    <div className="animate-fade-in" style={{maxWidth:'1000px', margin:'0 auto', paddingBottom:'32px'}}>
       
       {/* ── HEADER ── */}
       <div className="page-header" style={{alignItems:'center'}}>
@@ -203,7 +356,7 @@ export const PriceListPage: React.FC<PriceListPageProps> = ({
             <p className="page-subtitle">Katalog paket harga MC & generator penawaran langsung ke WhatsApp klien.</p>
           </div>
         </div>
-        <button onClick={() => openModal()} className="btn btn-primary">
+        <button onClick={() => openFormScreen()} className="btn btn-primary">
           <Plus size={15} /> Buat Paket Baru 🚀
         </button>
       </div>
@@ -240,7 +393,7 @@ export const PriceListPage: React.FC<PriceListPageProps> = ({
         </div>
       </div>
 
-      {/* ── GRID ── */}
+      {/* ── GRID KATALOG ── */}
       {filteredRateCards.length === 0 ? (
         <div className="card empty-state" style={{padding:'56px 24px'}}>
           <div className="empty-state-icon"><Tag size={24} /></div>
@@ -252,7 +405,7 @@ export const PriceListPage: React.FC<PriceListPageProps> = ({
                 : 'Buat paket harga pertama (contoh: Gold Wedding, Corporate Event) untuk memudahkan penawaran ke klien.'}
             </p>
           </div>
-          <button onClick={() => openModal()} className="btn btn-primary btn-sm" style={{marginTop:'8px'}}>
+          <button onClick={() => openFormScreen()} className="btn btn-primary btn-sm" style={{marginTop:'8px'}}>
             <Plus size={14} /> Buat Paket Baru
           </button>
         </div>
@@ -260,14 +413,14 @@ export const PriceListPage: React.FC<PriceListPageProps> = ({
         <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(300px, 1fr))', gap:'20px'}}>
           {filteredRateCards.map((card) => (
             <div key={card.id} className="card" style={{display:'flex', flexDirection:'column', padding:0, overflow:'hidden', position:'relative'}}>
-              {/* Card Header (Gradient) */}
+              {/* Card Header */}
               <div style={{padding:'20px 24px', background:'var(--primary-light)', borderBottom:'1px solid rgba(79,70,229,0.1)'}}>
                 <div style={{display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:'8px'}}>
                   <span className="badge badge-primary" style={{fontSize:'11px', textTransform:'uppercase'}}>
                     {card.category || 'Wedding'}
                   </span>
                   <div style={{display:'flex', gap:'4px'}}>
-                    <button onClick={() => openModal(card)} className="btn btn-ghost btn-sm" style={{padding:0, width:'28px', height:'28px', color:'var(--primary)'}}><Edit2 size={14} /></button>
+                    <button onClick={() => openFormScreen(card)} className="btn btn-ghost btn-sm" style={{padding:0, width:'28px', height:'28px', color:'var(--primary)'}}><Edit2 size={14} /></button>
                     <button onClick={() => handleDelete(card.id)} className="btn btn-ghost btn-sm" style={{padding:0, width:'28px', height:'28px', color:'var(--error)'}}><Trash2 size={14} /></button>
                   </div>
                 </div>
@@ -341,118 +494,58 @@ export const PriceListPage: React.FC<PriceListPageProps> = ({
         </div>
       )}
 
-      {/* ── MODAL ADD / EDIT ── */}
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingCard ? "Edit Paket Harga" : "Buat Paket Harga Baru"}>
-        <form onSubmit={handleSave} style={{display:'flex', flexDirection:'column', gap:'16px'}}>
-          <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px'}}>
-            <div>
-              <label className="input-label">Nama Paket *</label>
-              <input type="text" required value={name} onChange={e => setName(e.target.value)} className="input-field" placeholder="Contoh: Gold Wedding" />
-            </div>
-            <div>
-              <label className="input-label">Kategori</label>
-              <select value={category} onChange={e => setCategory(e.target.value)} className="input-field">
-                {CATEGORIES.filter(c => c !== 'Semua').map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
-            </div>
-          </div>
-
-          <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px'}}>
-            <div>
-              <label className="input-label">Harga (Rp) *</label>
-              <input type="number" required value={price} onChange={e => setPrice(Number(e.target.value))} className="input-field" placeholder="0" style={{fontWeight:'700', color:'var(--primary)'}} />
-            </div>
-            <div>
-              <label className="input-label">Durasi Acara (Jam)</label>
-              <input type="number" step="0.5" value={durationHours} onChange={e => setDurationHours(Number(e.target.value))} className="input-field" placeholder="3" />
-            </div>
-          </div>
-
-          <div>
-            <label className="input-label">Fasilitas / Inklusi (1 per baris) *</label>
-            <textarea 
-              required 
-              value={features} 
-              onChange={e => setFeatures(e.target.value)} 
-              className="input-field" 
-              style={{height:'100px', padding:'10px 12px', resize:'none', lineHeight:'1.5'}} 
-              placeholder="MC Resepsi (Max 3 Jam)\nMeeting Koordinasi H-7\nFree Konsultasi Rundown" 
-            />
-            <p className="input-hint">Pisahkan setiap poin fasilitas dengan tekan enter (baris baru).</p>
-          </div>
-
-          <div>
-            <label className="input-label">Opsi Tambahan / Add-ons (Optional)</label>
-            <textarea 
-              value={addOns} 
-              onChange={e => setAddOns(e.target.value)} 
-              className="input-field" 
-              style={{height:'60px', padding:'8px 12px', resize:'none', lineHeight:'1.5'}} 
-              placeholder="MC Akad Tambahan (+Rp 500.000)\nOvertime per jam (+Rp 300.000)" 
-            />
-          </div>
-
-          <div>
-            <label className="input-label">Syarat & Ketentuan Booking</label>
-            <input type="text" value={terms} onChange={e => setTerms(e.target.value)} className="input-field" placeholder="DP 30% untuk kunci tanggal, Pelunasan H-3" />
-          </div>
-
-          <div>
-            <label className="input-label">Catatan Khusus</label>
-            <input type="text" value={notes} onChange={e => setNotes(e.target.value)} className="input-field" placeholder="Harga belum termasuk transport luar kota" />
-          </div>
-          
-          <button type="submit" disabled={saving} className="btn btn-primary btn-full btn-lg" style={{marginTop:'8px'}}>
-            {saving ? 'Menyimpan Paket...' : 'Simpan Paket Harga 🚀'}
-          </button>
-        </form>
-      </Modal>
-
-      {/* ── MODAL WA QUOTE GENERATOR ── */}
+      {/* ── SHEET SHARE WA QUOTE ── */}
       {shareModalCard && (
-        <Modal isOpen={!!shareModalCard} onClose={() => setShareModalCard(null)} title="Bagikan Quote Penawaran WhatsApp">
-          <div style={{display:'flex', flexDirection:'column', gap:'16px'}}>
-            <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px'}}>
-              <div>
-                <label className="input-label"><User size={12} /> Nama Klien / Pasangan</label>
-                <input type="text" value={clientName} onChange={e => setClientName(e.target.value)} className="input-field" placeholder="Bpk. Kevin & Vania" />
-              </div>
-              <div>
-                <label className="input-label"><Calendar size={12} /> Rencana Tanggal</label>
-                <input type="text" value={eventDate} onChange={e => setEventDate(e.target.value)} className="input-field" placeholder="12 September 2026" />
-              </div>
+        <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setShareModalCard(null); }}>
+          <div className="modal-panel animate-fade-in" style={{maxWidth:'550px'}}>
+            <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'16px'}}>
+              <h3 style={{fontSize:'16px', fontWeight:'700', color:'var(--text-1)'}}>Bagikan Quote Penawaran WhatsApp</h3>
+              <button onClick={() => setShareModalCard(null)} className="btn btn-ghost btn-sm" style={{width:'32px', height:'32px', padding:0}}>✕</button>
             </div>
 
-            <div>
-              <label className="input-label">Live Preview Teks WhatsApp:</label>
-              <div style={{
-                background:'#ECFDF5', border:'1px solid #A7F3D0', borderRadius:'12px',
-                padding:'14px', fontSize:'12.5px', color:'#065F46', whiteSpace:'pre-wrap',
-                maxHeight:'220px', overflowY:'auto', fontFamily:'monospace', lineHeight:'1.5'
-              }}>
-                {generateWaQuoteText(shareModalCard, clientName, eventDate)}
+            <div style={{display:'flex', flexDirection:'column', gap:'16px'}}>
+              <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px'}}>
+                <div>
+                  <label className="input-label"><User size={12} /> Nama Klien / Pasangan</label>
+                  <input type="text" value={clientName} onChange={e => setClientName(e.target.value)} className="input-field" placeholder="Bpk. Kevin & Vania" />
+                </div>
+                <div>
+                  <label className="input-label"><Calendar size={12} /> Rencana Tanggal</label>
+                  <input type="text" value={eventDate} onChange={e => setEventDate(e.target.value)} className="input-field" placeholder="12 September 2026" />
+                </div>
               </div>
-            </div>
 
-            <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px', marginTop:'8px'}}>
-              <button 
-                onClick={handleCopyWaText}
-                className="btn btn-secondary btn-full"
-                style={{color: copiedId === shareModalCard.id ? 'var(--success)' : 'inherit'}}
-              >
-                {copiedId === shareModalCard.id ? <><CheckCircle2 size={15} /> Tersalin!</> : <><Copy size={15} /> Salin Teks</>}
-              </button>
-              
-              <button 
-                onClick={handleOpenWaLink}
-                className="btn btn-primary btn-full"
-                style={{background:'#059669', borderColor:'#059669'}}
-              >
-                <MessageSquare size={15} /> Buka WA 🚀
-              </button>
+              <div>
+                <label className="input-label">Live Preview Teks WhatsApp:</label>
+                <div style={{
+                  background:'#ECFDF5', border:'1px solid #A7F3D0', borderRadius:'12px',
+                  padding:'14px', fontSize:'12.5px', color:'#065F46', whiteSpace:'pre-wrap',
+                  maxHeight:'200px', overflowY:'auto', fontFamily:'monospace', lineHeight:'1.5'
+                }}>
+                  {generateWaQuoteText(shareModalCard, clientName, eventDate)}
+                </div>
+              </div>
+
+              <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px', marginTop:'8px'}}>
+                <button 
+                  onClick={handleCopyWaText}
+                  className="btn btn-secondary btn-full"
+                  style={{color: copiedId === shareModalCard.id ? 'var(--success)' : 'inherit'}}
+                >
+                  {copiedId === shareModalCard.id ? <><CheckCircle2 size={15} /> Tersalin!</> : <><Copy size={15} /> Salin Teks</>}
+                </button>
+                
+                <button 
+                  onClick={handleOpenWaLink}
+                  className="btn btn-primary btn-full"
+                  style={{background:'#059669', borderColor:'#059669'}}
+                >
+                  <MessageSquare size={15} /> Buka WA 🚀
+                </button>
+              </div>
             </div>
           </div>
-        </Modal>
+        </div>
       )}
 
     </div>
