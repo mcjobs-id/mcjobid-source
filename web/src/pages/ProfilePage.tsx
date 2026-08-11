@@ -1,170 +1,138 @@
 import React, { useState } from 'react';
-import { User, Smartphone, CreditCard, LogOut, CheckCircle2, Share, PlusSquare, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, User, Phone, MapPin, CheckCircle2, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { saveUserProfile } from '../services/firebaseService';
+import { updateProfile } from 'firebase/auth';
+import { getFirestore, doc, setDoc } from 'firebase/firestore';
 
-export const ProfilePage: React.FC = () => {
-  const { currentUser, userProfile, logout, refreshProfile } = useAuth();
-  const [stageName, setStageName] = useState(userProfile?.stageName || '');
+interface ProfilePageProps {
+  onBack: () => void;
+}
+
+export const ProfilePage: React.FC<ProfilePageProps> = ({ onBack }) => {
+  const { currentUser, userProfile, updateContextProfile } = useAuth();
+  
+  const [displayName, setDisplayName] = useState(userProfile?.displayName || '');
   const [phone, setPhone] = useState(userProfile?.phone || '');
-  const [instagram, setInstagram] = useState(userProfile?.instagram || '');
-  const [bankName, setBankName] = useState(userProfile?.bankName || 'BCA');
-  const [bankAccount, setBankAccount] = useState(userProfile?.bankAccount || '');
-  const [bankHolder, setBankHolder] = useState(userProfile?.bankHolder || '');
+  const [city, setCity] = useState(userProfile?.city || '');
   const [saving, setSaving] = useState(false);
-  const [successMsg, setSuccessMsg] = useState(false);
+  const [message, setMessage] = useState<{type: 'success'|'error', text: string} | null>(null);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentUser) return;
     setSaving(true);
+    setMessage(null);
+
     try {
-      await saveUserProfile({
-        uid: currentUser.uid,
-        name: userProfile?.name || currentUser.displayName || 'MC Talent',
-        email: currentUser.email || '',
-        stageName,
+      if (currentUser.displayName !== displayName) {
+        await updateProfile(currentUser, { displayName });
+      }
+
+      const db = getFirestore();
+      const updatedData = {
+        displayName,
         phone,
-        instagram,
-        bankName,
-        bankAccount,
-        bankHolder,
-        profileCompleted: true,
-        createdAt: userProfile?.createdAt || new Date().toISOString(),
+        city,
         updatedAt: new Date().toISOString()
-      });
-      await refreshProfile();
-      setSuccessMsg(true);
-      setTimeout(() => setSuccessMsg(false), 3000);
-    } catch (err) {
-      console.error('Error saving profile:', err);
+      };
+      await setDoc(doc(db, 'users', currentUser.uid), updatedData, { merge: true });
+      
+      updateContextProfile({ ...userProfile, ...updatedData });
+      setMessage({ type: 'success', text: 'Profil berhasil diperbarui!' });
+    } catch (error) {
+      console.error(error);
+      setMessage({ type: 'error', text: 'Gagal memperbarui profil.' });
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <div className="space-y-4 pb-24 animate-fade-in">
-      {/* Profile Header */}
-      <div className="card text-center py-6 bg-gradient-to-br from-indigo-900 to-slate-900 text-white border-none shadow-xl">
-        <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-indigo-500 to-emerald-400 mx-auto flex items-center justify-center font-black text-2xl shadow-lg mb-2">
-          {(userProfile?.stageName || userProfile?.name || 'MC').substring(0, 2).toUpperCase()}
-        </div>
-        <h2 className="text-xl font-extrabold">{userProfile?.stageName || userProfile?.name || 'MC Talent'}</h2>
-        <p className="text-xs text-indigo-200">{currentUser?.email}</p>
-        <span className="inline-block mt-2 text-[10px] font-bold px-3 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
-          PRO ACCOUNT • SINKRON REALTIME
-        </span>
-      </div>
-
-      {/* iOS PWA INSTALLATION GUIDE BANNER */}
-      <div className="bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 rounded-3xl p-4 space-y-2 text-xs">
-        <h3 className="font-extrabold text-indigo-900 dark:text-indigo-200 flex items-center gap-1.5 text-sm">
-          <Smartphone className="w-4 h-4 text-indigo-600" /> Panduan Akses iOS (iPhone/iPad)
-        </h3>
-        <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
-          Agar aplikasi ini bisa dibuka tanpa address bar layaknya aplikasi iOS native:
-        </p>
-        <ol className="list-decimal list-inside space-y-1 text-slate-700 dark:text-slate-200 font-medium">
-          <li>Buka web ini di browser <strong>Safari iOS</strong>.</li>
-          <li>Ketuk tombol <strong>Bagikan / Share</strong> (<Share className="w-3.5 h-3.5 inline mx-0.5" />) di bagian bawah Safari.</li>
-          <li>Pilih menu <strong>"Tambah ke Layar Utama" (Add to Home Screen)</strong> (<PlusSquare className="w-3.5 h-3.5 inline mx-0.5" />).</li>
-          <li>Icon MCJobId akan muncul di layar utama iPhone Anda!</li>
-        </ol>
-      </div>
-
-      {/* Edit Profile Form */}
-      <div className="card space-y-3">
-        <h3 className="font-extrabold text-slate-900 dark:text-white text-sm border-b border-slate-100 dark:border-slate-800 pb-2">
-          Edit Informasi Profil & Rekening
-        </h3>
-
-        {successMsg && (
-          <div className="p-3 rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 text-xs font-bold flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4" /> Profil berhasil diperbarui!
-          </div>
-        )}
-
-        <form onSubmit={handleSave} className="space-y-3 text-xs">
+    <div className="animate-fade-in" style={{maxWidth:'640px', margin:'0 auto', paddingBottom:'24px'}}>
+      
+      {/* ── HEADER ── */}
+      <div className="page-header" style={{alignItems:'center'}}>
+        <div style={{display:'flex', alignItems:'center', gap:'16px'}}>
+          <button onClick={onBack} className="btn btn-ghost" style={{padding:'0 8px', marginLeft:'-8px'}}>
+            <ArrowLeft size={18} />
+          </button>
           <div>
-            <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Nama Panggung / Brand MC</label>
-            <input
-              type="text"
-              value={stageName}
-              onChange={(e) => setStageName(e.target.value)}
-              className="input-field text-xs py-2.5"
-            />
+            <h1 className="page-title" style={{display:'flex', alignItems:'center', gap:'8px'}}>
+              Pengaturan Profil
+            </h1>
+            <p className="page-subtitle">Kelola informasi pribadi dan data kontak MC Anda.</p>
           </div>
-
-          <div className="grid grid-cols-2 gap-2.5">
-            <div>
-              <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">No WhatsApp</label>
-              <input
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                className="input-field text-xs py-2.5"
-              />
-            </div>
-            <div>
-              <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Instagram</label>
-              <input
-                type="text"
-                value={instagram}
-                onChange={(e) => setInstagram(e.target.value)}
-                className="input-field text-xs py-2.5"
-              />
-            </div>
-          </div>
-
-          <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
-            <h4 className="font-bold text-slate-800 dark:text-slate-200 mb-2">Rekening Invoice Default</h4>
-            <div className="grid grid-cols-3 gap-2">
-              <div>
-                <label className="block font-bold text-slate-400 mb-1">Bank</label>
-                <input
-                  type="text"
-                  value={bankName}
-                  onChange={(e) => setBankName(e.target.value)}
-                  className="input-field text-xs py-2"
-                />
-              </div>
-              <div>
-                <label className="block font-bold text-slate-400 mb-1">No Rekening</label>
-                <input
-                  type="text"
-                  value={bankAccount}
-                  onChange={(e) => setBankAccount(e.target.value)}
-                  className="input-field text-xs py-2"
-                />
-              </div>
-              <div>
-                <label className="block font-bold text-slate-400 mb-1">A.n Pemilik</label>
-                <input
-                  type="text"
-                  value={bankHolder}
-                  onChange={(e) => setBankHolder(e.target.value)}
-                  className="input-field text-xs py-2"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="pt-3">
-            <button type="submit" disabled={saving} className="btn-primary w-full py-3 text-xs">
-              {saving ? 'Menyimpan Perubahan...' : 'Simpan Profil'}
-            </button>
-          </div>
-        </form>
+        </div>
       </div>
 
-      {/* Logout */}
-      <button
-        onClick={logout}
-        className="w-full py-3 rounded-2xl bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 font-bold text-xs flex items-center justify-center gap-2 border border-rose-200 dark:border-rose-900/50 hover:bg-rose-100 transition-colors"
-      >
-        <LogOut className="w-4 h-4" /> Keluar dari Akun MC
-      </button>
+      <div className="card" style={{padding:0, overflow:'hidden', borderTop:'4px solid var(--primary)'}}>
+        
+        {/* Banner Area */}
+        <div style={{padding:'32px', display:'flex', flexDirection:'column', alignItems:'center', background:'var(--bg-surface-2)', borderBottom:'1px solid var(--border)'}}>
+          <div style={{width:'80px', height:'80px', borderRadius:'24px', background:'var(--primary-light)', border:'2px solid rgba(79,70,229,0.2)', display:'flex', alignItems:'center', justifyContent:'center', marginBottom:'16px'}}>
+            <span style={{fontSize:'32px', fontWeight:'800', color:'var(--primary)'}}>
+              {displayName.charAt(0).toUpperCase() || 'M'}
+            </span>
+          </div>
+          <h2 style={{fontSize:'20px', fontWeight:'700', color:'var(--text-1)', letterSpacing:'-0.02em'}}>{displayName || 'MC Professional'}</h2>
+          <p style={{fontSize:'13px', color:'var(--text-3)', marginTop:'2px', display:'flex', alignItems:'center', gap:'6px'}}>
+            <ShieldCheck size={14} color="var(--success)" /> Akun Terverifikasi
+          </p>
+        </div>
+
+        {/* Form Area */}
+        <div style={{padding:'32px'}}>
+          {message && (
+            <div style={{padding:'12px 16px', borderRadius:'10px', marginBottom:'24px', display:'flex', alignItems:'center', gap:'10px',
+              background: message.type === 'success' ? 'var(--success-light)' : 'var(--error-light)',
+              border: `1px solid ${message.type === 'success' ? 'rgba(5,150,105,0.2)' : 'rgba(220,38,38,0.2)'}`,
+              color: message.type === 'success' ? 'var(--success-text)' : 'var(--error-text)'
+            }}>
+              {message.type === 'success' ? <CheckCircle2 size={16} /> : null}
+              <p style={{fontSize:'13px', fontWeight:'600'}}>{message.text}</p>
+            </div>
+          )}
+
+          <form onSubmit={handleSave} style={{display:'flex', flexDirection:'column', gap:'20px'}}>
+            <div>
+              <label className="input-label">Email Pendaftaran (Read-only)</label>
+              <input type="email" value={currentUser?.email || ''} disabled className="input-field" style={{background:'var(--bg-surface-2)', color:'var(--text-3)'}} />
+              <p className="input-hint">Email tidak dapat diubah karena terhubung dengan metode login.</p>
+            </div>
+
+            <div>
+              <label className="input-label">Nama Lengkap / Nama Panggung</label>
+              <div className="input-group">
+                <User size={15} className="input-icon-left" />
+                <input type="text" required value={displayName} onChange={e => setDisplayName(e.target.value)} className="input-field" placeholder="Nama MC" />
+              </div>
+            </div>
+
+            <div>
+              <label className="input-label">Nomor WhatsApp / Telepon</label>
+              <div className="input-group">
+                <Phone size={15} className="input-icon-left" />
+                <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} className="input-field" placeholder="08..." />
+              </div>
+            </div>
+
+            <div>
+              <label className="input-label">Kota Domisili</label>
+              <div className="input-group">
+                <MapPin size={15} className="input-icon-left" />
+                <input type="text" value={city} onChange={e => setCity(e.target.value)} className="input-field" placeholder="Jakarta, Bandung..." />
+              </div>
+            </div>
+
+            <div style={{paddingTop:'12px', borderTop:'1px solid var(--border)', marginTop:'8px'}}>
+              <button type="submit" disabled={saving} className="btn btn-primary btn-full btn-lg">
+                {saving ? 'Menyimpan...' : 'Simpan Perubahan'}
+              </button>
+            </div>
+          </form>
+        </div>
+
+      </div>
     </div>
   );
 };

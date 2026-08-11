@@ -7,37 +7,67 @@ interface BottomNavProps {
   onChangeTab: (tab: TabType) => void;
 }
 
-export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, onChangeTab }) => {
-  const tabs = [
-    { id: 'home', label: 'Beranda', icon: Home },
-    { id: 'agenda', label: 'Agenda', icon: Calendar },
-    { id: 'clients', label: 'Klien', icon: Users },
-    { id: 'finance', label: 'Keuangan', icon: DollarSign },
-    { id: 'more', label: 'Lainnya', icon: Grid },
-  ];
+const tabs = [
+  { id: 'home',    label: 'Beranda',  icon: Home },
+  { id: 'agenda',  label: 'Agenda',   icon: Calendar },
+  { id: 'clients', label: 'Klien',    icon: Users },
+  { id: 'finance', label: 'Keuangan', icon: DollarSign },
+  { id: 'more',    label: 'Lainnya',  icon: Grid },
+];
 
+export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, onChangeTab }) => {
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 glass-bottom px-2 py-1.5 border-t border-slate-200/80 dark:border-slate-800 transition-colors">
-      <div className="flex items-center justify-around max-w-lg mx-auto">
-        {tabs.map((tab) => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => onChangeTab(tab.id as TabType)}
-              className={`flex flex-col items-center justify-center py-1 px-3 rounded-xl transition-all cursor-pointer ${
-                isActive
-                  ? 'text-indigo-600 dark:text-indigo-400 font-extrabold scale-105'
-                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-              }`}
-            >
-              <Icon className={`w-5 h-5 mb-0.5 ${isActive ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 dark:text-slate-500'}`} />
-              <span className="text-[10px] tracking-tight">{tab.label}</span>
-            </button>
-          );
-        })}
-      </div>
+    <nav
+      className="glass-bottom"
+      style={{
+        position: 'fixed', bottom: 0, left: 0, right: 0,
+        zIndex: 40, padding: '6px 8px 8px',
+        display: 'flex', alignItems: 'stretch',
+        gap: '4px',
+      }}
+    >
+      {tabs.map(({ id, label, icon: Icon }) => {
+        const isActive = activeTab === id;
+        return (
+          <button
+            key={id}
+            onClick={() => onChangeTab(id as TabType)}
+            style={{
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '3px',
+              padding: '6px 4px',
+              borderRadius: '10px',
+              border: 'none',
+              background: isActive ? 'var(--primary-light)' : 'transparent',
+              cursor: 'pointer',
+              transition: 'all 0.15s ease',
+              WebkitTapHighlightColor: 'transparent',
+            }}
+          >
+            <Icon
+              size={20}
+              style={{
+                color: isActive ? 'var(--primary)' : 'var(--text-4)',
+                transition: 'color 0.15s ease',
+              }}
+            />
+            <span style={{
+              fontSize: '9.5px',
+              fontWeight: isActive ? '700' : '500',
+              color: isActive ? 'var(--primary)' : 'var(--text-4)',
+              letterSpacing: '0.01em',
+              transition: 'all 0.15s ease',
+              lineHeight: 1,
+            }}>
+              {label}
+            </span>
+          </button>
+        );
+      })}
     </nav>
   );
 };

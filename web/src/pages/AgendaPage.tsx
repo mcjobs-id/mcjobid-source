@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, Search, Plus, MapPin, DollarSign, Filter } from 'lucide-react';
+import { Calendar, Plus, Search, MapPin, ChevronRight, Filter } from 'lucide-react';
 import type { Booking } from '../types';
 
 interface AgendaPageProps {
@@ -11,172 +11,144 @@ interface AgendaPageProps {
 
 type AgendaFilter = 'ALL' | 'UPCOMING' | 'COMPLETED' | 'DP_PENDING';
 
-export const AgendaPage: React.FC<AgendaPageProps> = ({
-  bookings,
-  onOpenDetail,
-  onOpenCreateJob
-}) => {
+function formatRpFull(val: number) {
+  return `Rp ${val.toLocaleString('id-ID')}`;
+}
+
+export const AgendaPage: React.FC<AgendaPageProps> = ({ bookings, onOpenDetail, onOpenCreateJob }) => {
   const [activeFilter, setActiveFilter] = useState<AgendaFilter>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
 
   const todayStr = new Date().toISOString().split('T')[0];
 
-  const filteredBookings = bookings.filter((b) => {
-    // Search query filter
-    const matchesSearch = 
-      (b.eventTitle || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (b.clientName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (b.venue || '').toLowerCase().includes(searchQuery.toLowerCase());
+  const filtered = bookings.filter(b => {
+    const q = searchQuery.toLowerCase();
+    const matchSearch = !q ||
+      (b.eventTitle || '').toLowerCase().includes(q) ||
+      (b.clientName || '').toLowerCase().includes(q) ||
+      (b.venue || '').toLowerCase().includes(q);
+    if (!matchSearch) return false;
 
-    if (!matchesSearch) return false;
-
-    // Filter status
-    if (activeFilter === 'UPCOMING') {
-      return b.eventDate >= todayStr && b.status !== 'CANCELLED';
-    }
-    if (activeFilter === 'COMPLETED') {
-      return b.status === 'COMPLETED' || (b.eventDate < todayStr && b.status !== 'CANCELLED');
-    }
-    if (activeFilter === 'DP_PENDING') {
-      return b.paymentStatus !== 'PAID' && b.status !== 'CANCELLED';
-    }
+    if (activeFilter === 'UPCOMING')   return b.eventDate >= todayStr && b.status !== 'CANCELLED';
+    if (activeFilter === 'COMPLETED')  return b.eventDate < todayStr || b.status === 'COMPLETED';
+    if (activeFilter === 'DP_PENDING') return b.paymentStatus !== 'PAID' && b.status !== 'CANCELLED';
     return true;
   });
 
-  return (
-    <div className="space-y-5 animate-fade-in max-w-7xl mx-auto pb-10">
-      {/* Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
-            <Calendar className="w-5 h-5 text-indigo-600" />
-            <span>Agenda Manggung & Jadwal MC</span>
-          </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Daftar lengkap jadwal acara, lokasi venue, dan catatan pelunasan honorarium.
-          </p>
-        </div>
+  const filterLabels: Record<AgendaFilter, string> = {
+    ALL: 'Semua Job', UPCOMING: 'Mendatang', COMPLETED: 'Selesai', DP_PENDING: 'Belum Lunas'
+  };
 
-        <button
-          onClick={onOpenCreateJob}
-          className="py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-md shadow-indigo-600/20 transition-all cursor-pointer"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Tambah Job Baru</span>
+  return (
+    <div className="animate-fade-in" style={{maxWidth:'1280px', margin:'0 auto', paddingBottom:'16px'}}>
+      {/* Header */}
+      <div className="page-header">
+        <div>
+          <h1 className="page-title" style={{display:'flex', alignItems:'center', gap:'8px'}}>
+            <Calendar size={20} color="var(--primary)" />
+            Agenda Manggung & Jadwal MC
+          </h1>
+          <p className="page-subtitle">Daftar lengkap jadwal acara, venue, honorarium, dan status pelunasan.</p>
+        </div>
+        <button onClick={onOpenCreateJob} className="btn btn-primary">
+          <Plus size={15} />
+          Tambah Job
         </button>
       </div>
 
-      {/* Search Bar & Filter Chips */}
-      <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-700 shadow-sm space-y-3">
-        {/* Search Field */}
-        <div className="relative">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+      {/* Search + Filter Bar */}
+      <div className="card" style={{padding:'14px 16px', marginBottom:'20px'}}>
+        <div style={{position:'relative', marginBottom:'12px'}}>
+          <Search size={15} style={{position:'absolute', left:'12px', top:'50%', transform:'translateY(-50%)', color:'var(--text-4)'}} />
           <input
             type="text"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Cari berdasarkan judul acara, nama klien, atau lokasi venue..."
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 text-xs outline-none focus:border-indigo-600"
+            onChange={e => setSearchQuery(e.target.value)}
+            placeholder="Cari judul acara, klien, atau lokasi venue..."
+            className="input-field"
+            style={{paddingLeft:'38px'}}
           />
         </div>
 
-        {/* Filter Chips */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs font-bold scrollbar-none">
-          {[
-            { id: 'ALL', label: 'Semua Job' },
-            { id: 'UPCOMING', label: 'Mendatang' },
-            { id: 'COMPLETED', label: 'Selesai' },
-            { id: 'DP_PENDING', label: 'DP / Belum Lunas' },
-          ].map((f) => (
-            <button
-              key={f.id}
-              onClick={() => setActiveFilter(f.id as AgendaFilter)}
-              className={`py-1.5 px-3 rounded-xl transition-all whitespace-nowrap cursor-pointer ${
-                activeFilter === f.id
-                  ? 'bg-indigo-600 text-white font-black shadow-sm'
-                  : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300 hover:bg-slate-200'
-              }`}
-            >
-              {f.label}
+        <div style={{display:'flex', gap:'8px', overflowX:'auto', paddingBottom:'2px'}} className="scrollbar-none">
+          {(Object.keys(filterLabels) as AgendaFilter[]).map(f => (
+            <button key={f} onClick={() => setActiveFilter(f)} className={`chip${activeFilter === f ? ' active' : ''}`}>
+              {filterLabels[f]}
+              {f === 'ALL' && bookings.length > 0 && (
+                <span style={{marginLeft:'4px', fontSize:'10px', opacity:0.7}}>({bookings.length})</span>
+              )}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Agenda Booking List */}
-      {filteredBookings.length === 0 ? (
-        <div className="bg-white dark:bg-slate-800 p-12 rounded-3xl border border-slate-200/80 dark:border-slate-700 text-center space-y-3">
-          <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 mx-auto flex items-center justify-center">
-            <Calendar className="w-6 h-6" />
+      {/* Booking Grid */}
+      {filtered.length === 0 ? (
+        <div className="card" style={{padding:0}}>
+          <div className="empty-state">
+            <div className="empty-state-icon"><Calendar size={22} /></div>
+            <div>
+              <p style={{fontSize:'14px', fontWeight:'600', color:'var(--text-1)', marginBottom:'4px'}}>
+                {searchQuery ? 'Tidak ada hasil pencarian' : 'Belum ada agenda'}
+              </p>
+              <p style={{fontSize:'12px', color:'var(--text-3)', maxWidth:'280px', margin:'0 auto 16px'}}>
+                {searchQuery ? 'Coba ubah kata kunci atau filter.' : 'Tambah job pertama Anda untuk mulai mengelola jadwal profesional.'}
+              </p>
+            </div>
+            {!searchQuery && (
+              <button onClick={onOpenCreateJob} className="btn btn-primary btn-sm">
+                <Plus size={14} /> Tambah Job Baru
+              </button>
+            )}
           </div>
-          <h4 className="text-base font-extrabold text-slate-800 dark:text-slate-200">
-            Tidak Ada Agenda Acara
-          </h4>
-          <p className="text-xs text-slate-400 max-w-sm mx-auto">
-            Tidak ditemukan acara yang sesuai dengan pencarian atau filter yang dipilih.
-          </p>
-          <button
-            onClick={onOpenCreateJob}
-            className="py-2.5 px-4 rounded-xl bg-indigo-600 text-white font-bold text-xs inline-flex items-center gap-1.5 shadow-md cursor-pointer"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Tambah Acara Baru</span>
-          </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredBookings.map((b) => (
-            <div
-              key={b.id}
-              onClick={() => onOpenDetail(b)}
-              className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-700 shadow-sm hover:shadow-md hover:border-indigo-300 dark:hover:border-indigo-600 transition-all cursor-pointer space-y-3 flex flex-col justify-between"
-            >
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-400">
-                    {b.category || 'Wedding'}
-                  </span>
-                  <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-extrabold ${
-                    b.paymentStatus === 'PAID'
-                      ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400'
-                      : b.dpAmount > 0
-                      ? 'bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-400'
-                      : 'bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-400'
-                  }`}>
-                    {b.paymentStatus === 'PAID' ? 'LUNAS' : b.dpAmount > 0 ? 'DP' : 'BELUM BAYAR'}
+        <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(280px, 1fr))', gap:'14px'}}>
+          {filtered.map(b => {
+            const isPaid = b.paymentStatus === 'PAID';
+            const isDP   = !isPaid && b.dpAmount > 0;
+            return (
+              <div key={b.id} className="card card-interactive" onClick={() => onOpenDetail(b)} style={{padding:'18px', display:'flex', flexDirection:'column', gap:'12px'}}>
+                {/* Top row: category + status */}
+                <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', gap:'8px'}}>
+                  <span className="badge badge-primary">{b.category || 'Wedding'}</span>
+                  <span className={`badge badge-dot ${isPaid ? 'badge-success' : isDP ? 'badge-warning' : 'badge-error'}`}>
+                    {isPaid ? 'LUNAS' : isDP ? 'DP' : 'BELUM BAYAR'}
                   </span>
                 </div>
 
-                <h4 className="text-base font-extrabold text-slate-900 dark:text-white leading-snug">
-                  {b.eventTitle || b.clientName}
-                </h4>
+                {/* Title + Client */}
+                <div>
+                  <h3 style={{fontSize:'15px', fontWeight:'700', color:'var(--text-1)', letterSpacing:'-0.01em', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', marginBottom:'2px'}}>
+                    {b.eventTitle || b.clientName}
+                  </h3>
+                  <p style={{fontSize:'12px', color:'var(--text-3)'}}>Klien: <span style={{fontWeight:'600', color:'var(--text-2)'}}>{b.clientName}</span></p>
+                </div>
 
-                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                  Klien: <span className="font-bold text-slate-800 dark:text-slate-200">{b.clientName}</span>
-                </p>
-
-                <div className="space-y-1 pt-1 text-xs text-slate-500 dark:text-slate-400">
-                  <div className="flex items-center gap-1.5">
-                    <Calendar className="w-3.5 h-3.5 text-indigo-500 flex-shrink-0" />
-                    <span>{b.eventDate} ({b.eventTime || '19:00'})</span>
-                  </div>
+                {/* Date + Venue */}
+                <div style={{display:'flex', flexDirection:'column', gap:'5px'}}>
+                  <span style={{fontSize:'12px', color:'var(--text-3)', display:'flex', alignItems:'center', gap:'6px'}}>
+                    <Calendar size={12} color="var(--primary)" />
+                    {b.eventDate} {b.eventTime ? `• ${b.eventTime}` : ''}
+                  </span>
                   {b.venue && (
-                    <div className="flex items-center gap-1.5 truncate">
-                      <MapPin className="w-3.5 h-3.5 text-rose-500 flex-shrink-0" />
-                      <span className="truncate">{b.venue}</span>
-                    </div>
+                    <span style={{fontSize:'12px', color:'var(--text-3)', display:'flex', alignItems:'center', gap:'6px', overflow:'hidden'}}>
+                      <MapPin size={12} color="var(--error)" style={{flexShrink:0}} />
+                      <span style={{overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{b.venue}</span>
+                    </span>
                   )}
                 </div>
-              </div>
 
-              <div className="pt-3 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between">
-                <span className="text-[11px] text-slate-400">Honorarium</span>
-                <span className="text-base font-black text-indigo-600 dark:text-indigo-400">
-                  Rp {(b.totalFee || 0).toLocaleString('id-ID')}
-                </span>
+                {/* Divider + Fee */}
+                <div style={{borderTop:'1px solid var(--border)', paddingTop:'12px', display:'flex', alignItems:'center', justifyContent:'space-between'}}>
+                  <span style={{fontSize:'11px', color:'var(--text-4)'}}>Honorarium</span>
+                  <span style={{fontSize:'16px', fontWeight:'700', color:'var(--primary)', fontVariantNumeric:'tabular-nums', letterSpacing:'-0.01em'}}>
+                    {formatRpFull(b.totalFee || 0)}
+                  </span>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

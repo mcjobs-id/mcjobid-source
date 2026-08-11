@@ -1,415 +1,398 @@
 import React, { useState } from 'react';
-import { Lock, Mail, Eye, EyeOff, ShieldCheck, LockKeyhole, RefreshCw, X } from 'lucide-react';
+import { Lock, Mail, Eye, EyeOff, ShieldCheck, LockKeyhole, RefreshCw, X, Mic, Calendar, DollarSign, BarChart2, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '../firebase/config';
 
 export const LoginPage: React.FC = () => {
   const { loginWithGoogle } = useAuth();
-  
-  // Registration form state
   const [emailState, setEmailState] = useState('');
   const [passwordState, setPasswordState] = useState('');
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
-  
-  // Modals state
   const [showLoginDialog, setShowLoginDialog] = useState(false);
   const [showResetDialog, setShowResetDialog] = useState(false);
-  
-  // Login Dialog state
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [isLoginPasswordVisible, setIsLoginPasswordVisible] = useState(false);
-  
-  // Reset Password state
   const [resetEmail, setResetEmail] = useState('');
   const [resetStatus, setResetStatus] = useState<string | null>(null);
-
-  // Status & Error
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [loginErrorMsg, setLoginErrorMsg] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // Password complexity check
   const hasUpper = /[A-Z]/.test(passwordState);
   const hasLower = /[a-z]/.test(passwordState);
   const hasDigit = /[0-9]/.test(passwordState);
   const isPasswordValid = hasUpper && hasLower && hasDigit && passwordState.length >= 6;
 
-  // Submit Register
   const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
-
-    if (!emailState.trim()) {
-      setErrorMsg('Email pembayaran wajib diisi.');
-      return;
-    }
-
-    if (!isPasswordValid) {
-      setErrorMsg('Password harus mengandung minimal Kapital (A-Z), Huruf Kecil (a-z), dan Angka (0-9).');
-      return;
-    }
-
+    if (!emailState.trim()) { setErrorMsg('Email pembayaran wajib diisi.'); return; }
+    if (!isPasswordValid) { setErrorMsg('Password harus mengandung huruf kapital, huruf kecil, dan angka.'); return; }
     setLoading(true);
     try {
       await createUserWithEmailAndPassword(auth, emailState, passwordState);
     } catch (err: any) {
       setErrorMsg(err.message || 'Gagal mendaftarkan akun. Silakan coba lagi.');
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
-  // Submit Login Dialog
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginErrorMsg(null);
-
-    if (!loginEmail.trim() || !loginPassword.trim()) {
-      setLoginErrorMsg('Email dan password wajib diisi.');
-      return;
-    }
-
+    if (!loginEmail.trim() || !loginPassword.trim()) { setLoginErrorMsg('Email dan password wajib diisi.'); return; }
     setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, loginEmail, loginPassword);
       setShowLoginDialog(false);
     } catch (err: any) {
       setLoginErrorMsg(err.message || 'Email atau password salah.');
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
-  // Submit Reset Password
   const handleResetSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!resetEmail.trim()) {
-      setResetStatus('Gagal: Email wajib diisi.');
-      return;
-    }
-
+    if (!resetEmail.trim()) { setResetStatus('Gagal: Email wajib diisi.'); return; }
     setLoading(true);
     try {
       await sendPasswordResetEmail(auth, resetEmail);
       setResetStatus('Tautan reset password berhasil dikirim ke email Anda!');
     } catch (err: any) {
       setResetStatus(`Gagal: ${err.message || 'Email tidak ditemukan.'}`);
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
+  const features = [
+    { icon: Calendar, title: 'Manajemen Jadwal Acara', desc: 'Catat dan kelola semua jadwal manggung dalam satu tampilan profesional.' },
+    { icon: DollarSign, title: 'Keuangan & Invoice Otomatis', desc: 'Pantau honorarium, DP, piutang, dan hasilkan invoice PDF profesional.' },
+    { icon: BarChart2, title: 'Analitik Performa Bisnis', desc: 'Laporan omset, net profit, dan tren perkembangan karier MC Anda.' },
+  ];
+
   return (
-    <div className="min-h-screen bg-[#F8FAFC] dark:bg-slate-900 text-[#0F172A] dark:text-white flex flex-col justify-between items-center p-4 sm:p-6 transition-colors">
-      <div className="w-full max-w-md mx-auto py-4 space-y-6 flex-1 flex flex-col justify-center">
-        {/* Centered Logo Header */}
-        <div className="text-center space-y-1">
-          <div className="w-12 h-12 rounded-2xl bg-indigo-600 mx-auto flex items-center justify-center text-white shadow-lg shadow-indigo-600/30 font-black text-xl tracking-tighter">
-            MC
-          </div>
-          <h1 className="text-xl font-black text-indigo-600 dark:text-indigo-400 tracking-tight mt-2">
-            mcjob.id
-          </h1>
-          <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-            powered by career mc academy
-          </p>
-        </div>
+    <>
+      <div className="login-layout">
+        {/* ========== LEFT HERO PANEL ========== */}
+        <div className="login-hero">
+          {/* Decorative circles */}
+          <div style={{position:'absolute', top: '-60px', right: '-60px', width: '240px', height: '240px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', zIndex: 0}} />
+          <div style={{position:'absolute', bottom: '80px', left: '-40px', width: '160px', height: '160px', borderRadius: '50%', background: 'rgba(255,255,255,0.04)', zIndex: 0}} />
 
-        {/* Main Card Container: "Akses Eksklusif" */}
-        <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 sm:p-8 border border-slate-200/80 dark:border-slate-700 shadow-xl shadow-slate-200/50 dark:shadow-none space-y-5 relative">
-          {/* Top Accent Blue Bar */}
-          <div className="w-14 h-1 bg-indigo-600 rounded-full mx-auto" />
-
-          {/* Lock Icon Badge */}
-          <div className="w-16 h-16 rounded-2xl bg-[#0F172A] dark:bg-slate-900 mx-auto flex items-center justify-center text-white shadow-md">
-            <Lock className="w-7 h-7 text-white" />
-          </div>
-
-          {/* Title */}
-          <div className="text-center">
-            <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-              Akses Eksklusif
-            </h2>
-
-            {/* Subtitle Pill Badge */}
-            <div className="mt-2.5 p-3 rounded-xl bg-blue-50 dark:bg-blue-950/50 border border-blue-100 dark:border-blue-900 text-blue-800 dark:text-blue-300 text-xs font-medium leading-relaxed">
-              Asisten khusus untuk mencatat jadwal MC dan pantau keuangan dengan aman & rahasia.
-            </div>
-
-            {/* Instructional Notice Box */}
-            <div className="mt-2.5 p-3 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-100 dark:border-indigo-900 text-indigo-900 dark:text-indigo-300 text-xs font-bold">
-              Silakan Buat Akun dengan Email Pembayaran Anda
-            </div>
-          </div>
-
-          {/* Error Feedback */}
-          {errorMsg && (
-            <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold dark:bg-rose-950/50 dark:border-rose-900 dark:text-rose-300">
-              {errorMsg}
-            </div>
-          )}
-
-          {/* Registration Form */}
-          <form onSubmit={handleRegisterSubmit} className="space-y-4">
-            <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                Email Pembayaran Anda
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                  <Mail className="w-4 h-4" />
-                </div>
-                <input
-                  type="email"
-                  required
-                  value={emailState}
-                  onChange={(e) => setEmailState(e.target.value)}
-                  placeholder="nama@email.com"
-                  className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 text-sm outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600/20 transition-all"
-                />
+          {/* Hero content */}
+          <div style={{position: 'relative', zIndex: 1}}>
+            {/* Brand */}
+            <div style={{display:'flex', alignItems:'center', gap: '12px', marginBottom: '64px'}}>
+              <div style={{width:'40px', height:'40px', borderRadius:'12px', background:'rgba(255,255,255,0.15)', backdropFilter:'blur(8px)', border:'1px solid rgba(255,255,255,0.2)', display:'flex', alignItems:'center', justifyContent:'center'}}>
+                <Mic size={20} color="white" />
+              </div>
+              <div>
+                <span style={{fontSize:'18px', fontWeight:'800', color:'white', letterSpacing:'-0.02em'}}>mcjob.id</span>
+                <p style={{fontSize:'10px', fontWeight:'600', color:'rgba(255,255,255,0.55)', textTransform:'uppercase', letterSpacing:'0.08em', marginTop:'1px'}}>powered by career mc academy</p>
               </div>
             </div>
 
-            <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                Buat Password / Kata Sandi
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                  <Lock className="w-4 h-4" />
-                </div>
-                <input
-                  type={isPasswordVisible ? 'text' : 'password'}
-                  required
-                  value={passwordState}
-                  onChange={(e) => setPasswordState(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full pl-10 pr-10 py-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 text-sm outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600/20 transition-all"
-                />
-                <button
-                  type="button"
-                  onClick={() => setIsPasswordVisible(!isPasswordVisible)}
-                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
-                >
-                  {isPasswordVisible ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
-                Mendukung kombinasi huruf kapital, huruf kecil, dan angka.
+            {/* Hero Title */}
+            <div style={{marginBottom: '40px'}}>
+              <h1 style={{fontSize:'clamp(28px,3.5vw,40px)', fontWeight:'800', color:'white', letterSpacing:'-0.03em', lineHeight:'1.1', marginBottom:'16px'}}>
+                Platform Profesional<br/>
+                untuk MC Indonesia
+              </h1>
+              <p style={{fontSize:'15px', color:'rgba(255,255,255,0.65)', lineHeight:'1.7', maxWidth:'340px'}}>
+                Catat jadwal acara, kelola keuangan, dan hasilkan invoice—semuanya dalam satu platform eksklusif.
               </p>
             </div>
 
-            {/* Primary CTA Button */}
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3.5 rounded-xl bg-[#0F172A] hover:bg-slate-800 active:scale-[0.98] text-white font-extrabold text-sm shadow-md transition-all cursor-pointer flex items-center justify-center gap-2"
-            >
-              {loading ? (
-                <RefreshCw className="w-4 h-4 animate-spin text-white" />
-              ) : (
-                <span>Daftar MCJOB.id</span>
-              )}
-            </button>
-          </form>
-
-          {/* Login Option for Existing Users */}
-          <div className="pt-2 text-center text-xs text-slate-500 dark:text-slate-400">
-            Sudah punya akun?{' '}
-            <button
-              type="button"
-              onClick={() => setShowLoginDialog(true)}
-              className="text-indigo-600 dark:text-indigo-400 font-extrabold hover:underline cursor-pointer"
-            >
-              Login
-            </button>
+            {/* Feature Bullets */}
+            <div style={{display:'flex', flexDirection:'column', gap:'16px'}}>
+              {features.map((f, i) => {
+                const Icon = f.icon;
+                return (
+                  <div key={i} style={{display:'flex', alignItems:'flex-start', gap:'14px'}}>
+                    <div style={{width:'36px', height:'36px', borderRadius:'10px', background:'rgba(255,255,255,0.12)', backdropFilter:'blur(8px)', border:'1px solid rgba(255,255,255,0.15)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0}}>
+                      <Icon size={16} color="white" />
+                    </div>
+                    <div>
+                      <p style={{fontSize:'13px', fontWeight:'700', color:'white', marginBottom:'2px'}}>{f.title}</p>
+                      <p style={{fontSize:'12px', color:'rgba(255,255,255,0.55)', lineHeight:'1.5'}}>{f.desc}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <div className="h-[1px] bg-slate-200 dark:bg-slate-700 flex-1" />
-            <span className="text-[10px] text-slate-400 font-bold uppercase">atau</span>
-            <div className="h-[1px] bg-slate-200 dark:bg-slate-700 flex-1" />
+          {/* Hero Bottom: Testimonial/Trust Badge */}
+          <div style={{position:'relative', zIndex:1, padding:'20px', borderRadius:'16px', background:'rgba(255,255,255,0.08)', backdropFilter:'blur(8px)', border:'1px solid rgba(255,255,255,0.12)'}}>
+            <div style={{display:'flex', alignItems:'center', gap:'10px', marginBottom:'10px'}}>
+              {[1,2,3].map(i => (
+                <div key={i} style={{width:'28px', height:'28px', borderRadius:'50%', background:`rgba(255,255,255,${0.15 + i*0.05})`, border:'2px solid rgba(255,255,255,0.3)', marginLeft: i > 1 ? '-8px' : '0', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'10px', fontWeight:'800', color:'white'}}>
+                  {['A','R','M'][i-1]}
+                </div>
+              ))}
+              <span style={{fontSize:'11px', color:'rgba(255,255,255,0.65)', marginLeft:'4px'}}>+200 MC aktif menggunakan platform ini</span>
+            </div>
+            <div style={{display:'flex', gap:'4px'}}>
+              {[...Array(5)].map((_, i) => (
+                <svg key={i} width="12" height="12" viewBox="0 0 12 12" fill="#FCD34D"><path d="M6 0l1.5 4.6H12L8.3 7.4l1.4 4.6L6 9.4 2.3 12l1.4-4.6L0 4.6h4.5z"/></svg>
+              ))}
+              <span style={{fontSize:'11px', color:'rgba(255,255,255,0.65)', marginLeft:'6px'}}>4.9/5 — Rating Pengguna</span>
+            </div>
           </div>
-
-          {/* Google Login Option */}
-          <button
-            type="button"
-            onClick={loginWithGoogle}
-            className="w-full py-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs flex items-center justify-center gap-2.5 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition-all cursor-pointer"
-          >
-            <svg className="w-4 h-4" viewBox="0 0 24 24">
-              <path
-                fill="#4285F4"
-                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-              />
-              <path
-                fill="#34A853"
-                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-              />
-              <path
-                fill="#FBBC05"
-                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
-              />
-              <path
-                fill="#EA4335"
-                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
-              />
-            </svg>
-            Masuk dengan Google
-          </button>
         </div>
 
-        {/* Security Footer */}
-        <div className="text-center space-y-1 pt-2">
-          <div className="inline-flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 font-medium">
-            <ShieldCheck className="w-4 h-4 text-emerald-500" />
-            <span>Keamanan Data & Privasi Terenkripsi</span>
-          </div>
-          <p className="text-[11px] text-slate-400 dark:text-slate-500">
-            Powered by @careermc.academy
-          </p>
-        </div>
-      </div>
-
-      {/* LoginDialog Modal */}
-      {showLoginDialog && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 sm:p-8 max-w-sm w-full border border-slate-200 dark:border-slate-700 shadow-2xl space-y-4 relative">
-            <button
-              onClick={() => setShowLoginDialog(false)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            <div className="text-center space-y-2">
-              <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 mx-auto flex items-center justify-center">
-                <LockKeyhole className="w-6 h-6" />
+        {/* ========== RIGHT FORM PANEL ========== */}
+        <div className="login-form-panel">
+          <div style={{width:'100%', maxWidth:'400px'}}>
+            {/* Mobile Brand (hidden on desktop) */}
+            <div style={{display:'flex', alignItems:'center', gap:'10px', marginBottom:'32px'}} className="lg:hidden-brand">
+              <div style={{width:'36px', height:'36px', borderRadius:'10px', background:'var(--primary)', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 4px 12px rgba(79,70,229,0.3)'}}>
+                <Mic size={18} color="white" />
               </div>
-              <h3 className="text-xl font-black text-slate-900 dark:text-white">
-                Login ke Akun
-              </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                Gunakan Email & Password yang sudah Anda daftarkan sebelumnya.
+              <div>
+                <span style={{fontSize:'16px', fontWeight:'800', color:'var(--primary)', letterSpacing:'-0.02em'}}>mcjob.id</span>
+              </div>
+            </div>
+
+            {/* Form Header */}
+            <div style={{marginBottom:'28px'}}>
+              <h2 style={{fontSize:'24px', fontWeight:'700', color:'var(--text-1)', letterSpacing:'-0.025em', lineHeight:'1.2', marginBottom:'6px'}}>
+                Akses Eksklusif
+              </h2>
+              <p style={{fontSize:'14px', color:'var(--text-3)', lineHeight:'1.6'}}>
+                Asisten khusus MC profesional Indonesia — catat jadwal & pantau keuangan dengan aman.
               </p>
             </div>
 
-            {loginErrorMsg && (
-              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold dark:bg-rose-950/50 dark:border-rose-900 dark:text-rose-300 text-center">
-                {loginErrorMsg}
+            {/* Notice box */}
+            <div style={{padding:'10px 14px', borderRadius:'10px', background:'var(--primary-light)', border:'1px solid rgba(79,70,229,0.2)', marginBottom:'24px', display:'flex', alignItems:'flex-start', gap:'10px'}}>
+              <Lock size={14} color="var(--primary)" style={{marginTop:'1px', flexShrink:0}} />
+              <p style={{fontSize:'12px', fontWeight:'600', color:'var(--primary-text)', lineHeight:'1.5'}}>
+                Silakan buat akun menggunakan <strong>Email Pembayaran</strong> yang telah Anda daftarkan.
+              </p>
+            </div>
+
+            {/* Error */}
+            {errorMsg && (
+              <div style={{padding:'10px 14px', borderRadius:'10px', background:'var(--error-light)', border:'1px solid rgba(220,38,38,0.2)', marginBottom:'16px'}}>
+                <p style={{fontSize:'12px', fontWeight:'600', color:'var(--error-text)'}}>{errorMsg}</p>
               </div>
             )}
 
-            <form onSubmit={handleLoginSubmit} className="space-y-3">
+            {/* Registration Form */}
+            <form onSubmit={handleRegisterSubmit} style={{display:'flex', flexDirection:'column', gap:'16px'}}>
               <div>
-                <input
-                  type="email"
-                  required
-                  value={loginEmail}
-                  onChange={(e) => setLoginEmail(e.target.value)}
-                  placeholder="nama@email.com"
-                  className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 text-xs outline-none focus:border-indigo-600"
-                />
+                <label className="input-label">Email Pembayaran Anda</label>
+                <div className="input-group">
+                  <Mail size={15} className="input-icon-left" />
+                  <input
+                    type="email"
+                    required
+                    value={emailState}
+                    onChange={(e) => setEmailState(e.target.value)}
+                    placeholder="nama@email.com"
+                    className="input-field"
+                    style={{paddingLeft: '38px'}}
+                  />
+                </div>
               </div>
 
               <div>
-                <div className="relative">
+                <label className="input-label">Buat Password / Kata Sandi</label>
+                <div className="input-group" style={{position:'relative'}}>
+                  <Lock size={15} className="input-icon-left" />
+                  <input
+                    type={isPasswordVisible ? 'text' : 'password'}
+                    required
+                    value={passwordState}
+                    onChange={(e) => setPasswordState(e.target.value)}
+                    placeholder="Min. 6 karakter"
+                    className="input-field"
+                    style={{paddingLeft: '38px', paddingRight: '40px'}}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setIsPasswordVisible(!isPasswordVisible)}
+                    style={{position:'absolute', right:'12px', top:'50%', transform:'translateY(-50%)', color:'var(--text-4)', background:'none', border:'none', cursor:'pointer', padding:0, display:'flex', alignItems:'center'}}
+                  >
+                    {isPasswordVisible ? <EyeOff size={15} /> : <Eye size={15} />}
+                  </button>
+                </div>
+                {/* Password strength indicators */}
+                {passwordState.length > 0 && (
+                  <div style={{display:'flex', gap:'8px', marginTop:'8px', flexWrap:'wrap'}}>
+                    {[
+                      { check: hasUpper, label: 'A-Z Kapital' },
+                      { check: hasLower, label: 'a-z Kecil' },
+                      { check: hasDigit, label: '0-9 Angka' },
+                      { check: passwordState.length >= 6, label: '6+ Karakter' },
+                    ].map((item) => (
+                      <span key={item.label} style={{
+                        fontSize:'10px', fontWeight:'600', padding:'2px 7px', borderRadius:'9999px',
+                        background: item.check ? 'var(--success-light)' : 'var(--bg-surface-2)',
+                        color: item.check ? 'var(--success-text)' : 'var(--text-4)',
+                        border: `1px solid ${item.check ? 'rgba(5,150,105,0.2)' : 'var(--border)'}`,
+                        display:'inline-flex', alignItems:'center', gap:'3px'
+                      }}>
+                        {item.check ? <CheckCircle2 size={9} /> : null}
+                        {item.label}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <button type="submit" disabled={loading} className="btn btn-primary btn-full btn-lg" style={{marginTop:'4px'}}>
+                {loading ? <RefreshCw size={16} style={{animation:'spin 1s linear infinite'}} /> : 'Daftar & Masuk ke mcjob.id'}
+              </button>
+            </form>
+
+            {/* Login Link */}
+            <p style={{textAlign:'center', fontSize:'13px', color:'var(--text-3)', marginTop:'20px'}}>
+              Sudah punya akun?{' '}
+              <button
+                type="button"
+                onClick={() => setShowLoginDialog(true)}
+                style={{color:'var(--primary)', fontWeight:'600', background:'none', border:'none', cursor:'pointer', fontSize:'13px'}}
+              >
+                Masuk sekarang
+              </button>
+            </p>
+
+            {/* Divider */}
+            <div style={{display:'flex', alignItems:'center', gap:'12px', margin:'20px 0'}}>
+              <div style={{flex:1, height:'1px', background:'var(--border)'}} />
+              <span style={{fontSize:'11px', fontWeight:'600', color:'var(--text-4)', textTransform:'uppercase', letterSpacing:'0.07em'}}>atau</span>
+              <div style={{flex:1, height:'1px', background:'var(--border)'}} />
+            </div>
+
+            {/* Google SSO */}
+            <button
+              type="button"
+              onClick={loginWithGoogle}
+              className="btn btn-secondary btn-full"
+              style={{height:'42px', fontSize:'13px', fontWeight:'600'}}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+              </svg>
+              Masuk dengan Google
+            </button>
+
+            {/* Security Footer */}
+            <div style={{display:'flex', alignItems:'center', justifyContent:'center', gap:'6px', marginTop:'28px'}}>
+              <ShieldCheck size={13} color="var(--success)" />
+              <span style={{fontSize:'11px', color:'var(--text-4)'}}>
+                Keamanan Data & Privasi Terenkripsi — Powered by @careermc.academy
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ========== LOGIN DIALOG MODAL ========== */}
+      {showLoginDialog && (
+        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowLoginDialog(false); }}>
+          <div className="modal-panel animate-fade-in">
+            <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'20px'}}>
+              <div>
+                <h3 style={{fontSize:'18px', fontWeight:'700', color:'var(--text-1)', letterSpacing:'-0.015em'}}>Masuk ke Akun</h3>
+                <p style={{fontSize:'12px', color:'var(--text-3)', marginTop:'2px'}}>Gunakan email & password yang sudah terdaftar.</p>
+              </div>
+              <button onClick={() => setShowLoginDialog(false)} className="btn btn-ghost btn-sm" style={{width:'32px', padding:0}}>
+                <X size={16} />
+              </button>
+            </div>
+
+            {loginErrorMsg && (
+              <div style={{padding:'10px 14px', borderRadius:'10px', background:'var(--error-light)', border:'1px solid rgba(220,38,38,0.2)', marginBottom:'16px'}}>
+                <p style={{fontSize:'12px', fontWeight:'600', color:'var(--error-text)'}}>{loginErrorMsg}</p>
+              </div>
+            )}
+
+            <form onSubmit={handleLoginSubmit} style={{display:'flex', flexDirection:'column', gap:'14px'}}>
+              <div>
+                <label className="input-label">Email</label>
+                <input type="email" required value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} placeholder="nama@email.com" className="input-field" />
+              </div>
+              <div>
+                <label className="input-label">Password</label>
+                <div style={{position:'relative'}}>
                   <input
                     type={isLoginPasswordVisible ? 'text' : 'password'}
                     required
                     value={loginPassword}
                     onChange={(e) => setLoginPassword(e.target.value)}
                     placeholder="Kata sandi Anda"
-                    className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 text-xs outline-none focus:border-indigo-600"
+                    className="input-field"
+                    style={{paddingRight:'40px'}}
                   />
-                  <button
-                    type="button"
-                    onClick={() => setIsLoginPasswordVisible(!isLoginPasswordVisible)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400"
-                  >
-                    {isLoginPasswordVisible ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                  <button type="button" onClick={() => setIsLoginPasswordVisible(!isLoginPasswordVisible)}
+                    style={{position:'absolute', right:'12px', top:'50%', transform:'translateY(-50%)', color:'var(--text-4)', background:'none', border:'none', cursor:'pointer', display:'flex', alignItems:'center'}}>
+                    {isLoginPasswordVisible ? <EyeOff size={14} /> : <Eye size={14} />}
                   </button>
                 </div>
               </div>
 
-              <div className="text-right">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowLoginDialog(false);
-                    setShowResetDialog(true);
-                  }}
-                  className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
-                >
+              <div style={{textAlign:'right'}}>
+                <button type="button" onClick={() => { setShowLoginDialog(false); setShowResetDialog(true); }}
+                  style={{fontSize:'12px', fontWeight:'600', color:'var(--primary)', background:'none', border:'none', cursor:'pointer'}}>
                   Lupa Password?
                 </button>
               </div>
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full py-3 rounded-xl bg-[#0F172A] hover:bg-slate-800 text-white font-extrabold text-xs shadow-md transition-all cursor-pointer flex items-center justify-center gap-2"
-              >
-                {loading ? <RefreshCw className="w-4 h-4 animate-spin text-white" /> : 'Masuk Sekarang'}
+              <button type="submit" disabled={loading} className="btn btn-primary btn-full">
+                {loading ? <RefreshCw size={15} style={{animation:'spin 1s linear infinite'}} /> : 'Masuk Sekarang'}
               </button>
             </form>
           </div>
         </div>
       )}
 
-      {/* ResetPasswordDialog Modal */}
+      {/* ========== RESET PASSWORD MODAL ========== */}
       {showResetDialog && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 sm:p-8 max-w-sm w-full border border-slate-200 dark:border-slate-700 shadow-2xl space-y-4 relative">
-            <button
-              onClick={() => setShowResetDialog(false)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            <div className="text-center space-y-2">
-              <h3 className="text-xl font-black text-slate-900 dark:text-white">
-                Reset Password
-              </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                Masukkan email terdaftar Anda. Kami akan mengirim tautan untuk membuat password baru.
-              </p>
+        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowResetDialog(false); }}>
+          <div className="modal-panel animate-fade-in">
+            <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'20px'}}>
+              <div>
+                <h3 style={{fontSize:'18px', fontWeight:'700', color:'var(--text-1)', letterSpacing:'-0.015em'}}>Reset Password</h3>
+                <p style={{fontSize:'12px', color:'var(--text-3)', marginTop:'2px'}}>Masukkan email terdaftar untuk menerima tautan reset.</p>
+              </div>
+              <button onClick={() => setShowResetDialog(false)} className="btn btn-ghost btn-sm" style={{width:'32px', padding:0}}>
+                <X size={16} />
+              </button>
             </div>
 
             {resetStatus && (
-              <div className={`p-3 rounded-xl text-xs font-semibold text-center ${
-                resetStatus.startsWith('Gagal')
-                  ? 'bg-rose-50 border border-rose-200 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300'
-                  : 'bg-emerald-50 border border-emerald-200 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300'
-              }`}>
-                {resetStatus}
+              <div style={{padding:'10px 14px', borderRadius:'10px', marginBottom:'16px',
+                background: resetStatus.startsWith('Gagal') ? 'var(--error-light)' : 'var(--success-light)',
+                border: resetStatus.startsWith('Gagal') ? '1px solid rgba(220,38,38,0.2)' : '1px solid rgba(5,150,105,0.2)'
+              }}>
+                <p style={{fontSize:'12px', fontWeight:'600', color: resetStatus.startsWith('Gagal') ? 'var(--error-text)' : 'var(--success-text)'}}>
+                  {resetStatus}
+                </p>
               </div>
             )}
 
-            <form onSubmit={handleResetSubmit} className="space-y-3">
-              <input
-                type="email"
-                required
-                value={resetEmail}
-                onChange={(e) => setResetEmail(e.target.value)}
-                placeholder="nama@email.com"
-                className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 text-xs outline-none focus:border-indigo-600"
-              />
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full py-3 rounded-xl bg-[#0F172A] hover:bg-slate-800 text-white font-extrabold text-xs shadow-md transition-all cursor-pointer flex items-center justify-center"
-              >
-                {loading ? <RefreshCw className="w-4 h-4 animate-spin text-white" /> : 'Kirim Tautan Reset'}
+            <form onSubmit={handleResetSubmit} style={{display:'flex', flexDirection:'column', gap:'14px'}}>
+              <div>
+                <label className="input-label">Email Terdaftar</label>
+                <input type="email" required value={resetEmail} onChange={(e) => setResetEmail(e.target.value)} placeholder="nama@email.com" className="input-field" />
+              </div>
+              <button type="submit" disabled={loading} className="btn btn-primary btn-full">
+                {loading ? <RefreshCw size={15} style={{animation:'spin 1s linear infinite'}} /> : 'Kirim Tautan Reset'}
               </button>
             </form>
           </div>
         </div>
       )}
-    </div>
+
+      <style>{`
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @media (min-width: 1024px) { .lg\\:hidden-brand { display: none !important; } }
+      `}</style>
+    </>
   );
 };

@@ -1,76 +1,40 @@
-import React, { useState } from 'react';
-import { Zap, ArrowLeft, Check } from 'lucide-react';
+import React from 'react';
+import { ArrowLeft, Zap, ToggleRight, LayoutGrid } from 'lucide-react';
 
 interface QuickActionSettingsPageProps {
   onBack: () => void;
 }
 
 export const QuickActionSettingsPage: React.FC<QuickActionSettingsPageProps> = ({ onBack }) => {
-  const [enabled, setEnabled] = useState(true);
-  const [qaJob, setQaJob] = useState(true);
-  const [qaClient, setQaClient] = useState(true);
-  const [qaPayment, setQaPayment] = useState(true);
-  const [qaExpense, setQaExpense] = useState(true);
-  const [qaInvoice, setQaInvoice] = useState(true);
-
   return (
-    <div className="space-y-5 animate-fade-in max-w-4xl mx-auto pb-10">
-      <div className="flex items-center gap-3">
-        <button
-          onClick={onBack}
-          className="p-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 cursor-pointer"
-        >
-          <ArrowLeft className="w-5 h-5" />
-        </button>
-        <div>
-          <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
-            <Zap className="w-5 h-5 text-amber-500" />
-            <span>Pengaturan Pintasan FAB Melayang</span>
-          </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            Kustomisasi tombol aksi cepat yang muncul di sudut layar dasbor.
-          </p>
-        </div>
-      </div>
-
-      <div className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200/80 dark:border-slate-700 shadow-sm p-6 space-y-4">
-        <div className="flex items-center justify-between">
+    <div className="animate-fade-in" style={{maxWidth:'800px', margin:'0 auto', paddingBottom:'24px'}}>
+      
+      {/* ── HEADER ── */}
+      <div className="page-header" style={{alignItems:'center'}}>
+        <div style={{display:'flex', alignItems:'center', gap:'16px'}}>
+          <button onClick={onBack} className="btn btn-ghost" style={{padding:'0 8px', marginLeft:'-8px'}}>
+            <ArrowLeft size={18} />
+          </button>
           <div>
-            <h4 className="text-sm font-extrabold text-slate-900 dark:text-white">Aktifkan Tombol FAB</h4>
-            <p className="text-xs text-slate-400">Tampilkan tombol melayang di beranda</p>
+            <h1 className="page-title" style={{display:'flex', alignItems:'center', gap:'8px'}}>
+              <Zap size={20} color="var(--warning)" />
+              Pintasan Cepat Dasbor
+            </h1>
+            <p className="page-subtitle">Kustomisasi tampilan tombol aksi cepat di beranda.</p>
           </div>
-          <input
-            type="checkbox"
-            checked={enabled}
-            onChange={(e) => setEnabled(e.target.checked)}
-            className="w-5 h-5 accent-indigo-600 rounded cursor-pointer"
-          />
-        </div>
-
-        <div className="h-[1px] bg-slate-100 dark:bg-slate-700" />
-
-        <div className="space-y-3">
-          <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Pilih Pintasan Aktif</p>
-
-          {[
-            { label: 'Tambah Job Acara', state: qaJob, setState: setQaJob },
-            { label: 'Tambah Klien Baru', state: qaClient, setState: setQaClient },
-            { label: 'Catat Pemasukan / DP', state: qaPayment, setState: setQaPayment },
-            { label: 'Catat Pengeluaran', state: qaExpense, setState: setQaExpense },
-            { label: 'Buat Invoice PDF', state: qaInvoice, setState: setQaInvoice },
-          ].map((item, idx) => (
-            <label key={idx} className="flex items-center justify-between py-1 cursor-pointer">
-              <span className="text-xs font-bold text-slate-700 dark:text-slate-200">{item.label}</span>
-              <input
-                type="checkbox"
-                checked={item.state}
-                onChange={(e) => item.setState(e.target.checked)}
-                className="w-4 h-4 accent-indigo-600 rounded cursor-pointer"
-              />
-            </label>
-          ))}
         </div>
       </div>
+
+      <div className="card" style={{padding:'40px 24px', textAlign:'center'}}>
+        <div style={{width:'64px', height:'64px', borderRadius:'16px', background:'var(--warning-light)', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 20px'}}>
+          <LayoutGrid size={32} color="var(--warning)" />
+        </div>
+        <h3 style={{fontSize:'18px', fontWeight:'700', color:'var(--text-1)', marginBottom:'8px'}}>Segera Hadir</h3>
+        <p style={{fontSize:'14px', color:'var(--text-3)', maxWidth:'400px', margin:'0 auto', lineHeight:'1.6'}}>
+          Fitur untuk mengatur urutan dan memunculkan/menyembunyikan menu pintasan di beranda sedang dalam tahap pengembangan akhir.
+        </p>
+      </div>
+
     </div>
   );
 };

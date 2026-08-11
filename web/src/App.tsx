@@ -359,8 +359,8 @@ const MainApp: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] dark:bg-slate-900 flex text-[#0F172A] dark:text-slate-100 transition-colors">
-      {/* Desktop Sidebar */}
+    <div className="app-layout">
+      {/* Desktop Sidebar — hidden on mobile */}
       {activeTab !== 'daymode' && (
         <Sidebar
           activeTab={activeTab}
@@ -378,7 +378,7 @@ const MainApp: React.FC = () => {
       )}
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="main-area">
         {activeTab !== 'daymode' && (
           <Navbar
             isDarkMode={isDarkMode}
@@ -387,20 +387,22 @@ const MainApp: React.FC = () => {
           />
         )}
 
-        <main className="flex-1 p-4 md:p-8 pb-24 md:pb-8 overflow-y-auto">
+        <main className="content-area">
           {renderContent()}
         </main>
       </div>
 
-      {/* Mobile Floating 5-Tab Bottom Navigation */}
+      {/* Mobile Bottom Navigation */}
       {activeTab !== 'daymode' && subView === 'main' && (
-        <BottomNav
-          activeTab={activeTab}
-          onChangeTab={(t) => {
-            setSubView('main');
-            setActiveTab(t);
-          }}
-        />
+        <div className="md:hidden" style={{display:'block'}}>
+          <BottomNav
+            activeTab={activeTab}
+            onChangeTab={(t) => {
+              setSubView('main');
+              setActiveTab(t);
+            }}
+          />
+        </div>
       )}
     </div>
   );

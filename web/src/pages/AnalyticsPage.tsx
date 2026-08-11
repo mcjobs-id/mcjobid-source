@@ -1,78 +1,100 @@
 import React from 'react';
-import { TrendingUp, ArrowLeft, DollarSign, Calendar, PieChart } from 'lucide-react';
+import { ArrowLeft, BarChart2, TrendingUp, Calendar, DollarSign, Activity } from 'lucide-react';
 import type { Booking, Expense } from '../types';
 
 interface AnalyticsPageProps {
+  onBack: () => void;
   bookings: Booking[];
   expenses: Expense[];
-  onBack: () => void;
 }
 
-export const AnalyticsPage: React.FC<AnalyticsPageProps> = ({ bookings, expenses, onBack }) => {
-  const totalRevenue = bookings.reduce((sum, b) => sum + (b.totalFee || 0), 0);
-  const totalExpenses = expenses.reduce((sum, e) => sum + (e.amount || 0), 0);
-  const netProfit = totalRevenue - totalExpenses;
-  const profitMargin = totalRevenue > 0 ? ((netProfit / totalRevenue) * 100).toFixed(1) : '0';
+export const AnalyticsPage: React.FC<AnalyticsPageProps> = ({ onBack, bookings, expenses }) => {
+  const currentYear = new Date().getFullYear();
+  
+  // Calculate yearly metrics
+  const yearlyBookings = bookings.filter(b => b.status !== 'CANCELLED' && b.eventDate.startsWith(currentYear.toString()));
+  const totalHonor = yearlyBookings.reduce((sum, b) => sum + (b.totalFee || 0), 0);
+  
+  const yearlyExpenses = expenses.filter(e => e.date.startsWith(currentYear.toString()));
+  const totalExpense = yearlyExpenses.reduce((sum, e) => sum + (e.amount || 0), 0);
+  
+  const netProfit = totalHonor - totalExpense;
+  const margin = totalHonor > 0 ? ((netProfit / totalHonor) * 100).toFixed(1) : '0';
+
+  // Format to standard Rp currency without decimals
+  const formatRp = (val: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(val);
 
   return (
-    <div className="space-y-5 animate-fade-in max-w-4xl mx-auto pb-10">
-      <div className="flex items-center gap-3">
-        <button
-          onClick={onBack}
-          className="p-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 cursor-pointer"
-        >
-          <ArrowLeft className="w-5 h-5" />
-        </button>
-        <div>
-          <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-emerald-600" />
-            <span>Analisis Performa Bisnis MC</span>
-          </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            Laporan omset, rasio laba bersih, dan statistik performa acara.
-          </p>
-        </div>
-      </div>
-
-      {/* Metrics Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-700 shadow-sm">
-          <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Omset</p>
-          <p className="text-2xl font-black text-indigo-600 dark:text-indigo-400 mt-1">
-            Rp {totalRevenue.toLocaleString('id-ID')}
-          </p>
-        </div>
-
-        <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-700 shadow-sm">
-          <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Pengeluaran</p>
-          <p className="text-2xl font-black text-rose-600 dark:text-rose-400 mt-1">
-            Rp {totalExpenses.toLocaleString('id-ID')}
-          </p>
-        </div>
-
-        <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-700 shadow-sm">
-          <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Net Profit Margin</p>
-          <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1">
-            {profitMargin}%
-          </p>
-        </div>
-      </div>
-
-      <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl border border-slate-200/80 dark:border-slate-700 shadow-sm space-y-4">
-        <h3 className="text-sm font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
-          <PieChart className="w-4 h-4 text-indigo-600" />
-          <span>Ringkasan Laba Bersih</span>
-        </h3>
-        
-        <div className="p-4 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-100 dark:border-indigo-900 flex items-center justify-between">
+    <div className="animate-fade-in" style={{maxWidth:'1000px', margin:'0 auto', paddingBottom:'24px'}}>
+      
+      {/* ── HEADER ── */}
+      <div className="page-header" style={{alignItems:'center'}}>
+        <div style={{display:'flex', alignItems:'center', gap:'16px'}}>
+          <button onClick={onBack} className="btn btn-ghost" style={{padding:'0 8px', marginLeft:'-8px'}}>
+            <ArrowLeft size={18} />
+          </button>
           <div>
-            <p className="text-xs font-bold text-indigo-900 dark:text-indigo-200">Estimasi Laba Bersih MC Studio</p>
-            <p className="text-2xl font-black text-indigo-700 dark:text-indigo-400 mt-0.5">
-              Rp {netProfit.toLocaleString('id-ID')}
-            </p>
+            <h1 className="page-title" style={{display:'flex', alignItems:'center', gap:'8px'}}>
+              <BarChart2 size={20} color="var(--primary)" />
+              Analisis Performa Bisnis
+            </h1>
+            <p className="page-subtitle">Ringkasan kinerja tahunan {currentYear} berdasarkan data transaksi tersimpan.</p>
           </div>
         </div>
       </div>
+
+      {/* ── KPI HIGHLIGHTS ── */}
+      <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(220px, 1fr))', gap:'16px', marginBottom:'24px'}}>
+        
+        <div className="card" style={{padding:'24px', borderTop:'3px solid var(--primary)'}}>
+          <span style={{fontSize:'12px', fontWeight:'700', color:'var(--text-3)', textTransform:'uppercase', letterSpacing:'0.05em', display:'block', marginBottom:'8px'}}>
+            Total Omset {currentYear}
+          </span>
+          <h2 style={{fontSize:'clamp(24px, 3vw, 28px)', fontWeight:'800', color:'var(--text-1)', letterSpacing:'-0.02em', fontVariantNumeric:'tabular-nums'}}>
+            {formatRp(totalHonor)}
+          </h2>
+          <div style={{display:'flex', alignItems:'center', gap:'6px', marginTop:'12px'}}>
+            <span className="badge badge-primary"><Calendar size={12} /> {yearlyBookings.length} Job Selesai</span>
+          </div>
+        </div>
+
+        <div className="card" style={{padding:'24px', borderTop:'3px solid var(--success)'}}>
+          <span style={{fontSize:'12px', fontWeight:'700', color:'var(--text-3)', textTransform:'uppercase', letterSpacing:'0.05em', display:'block', marginBottom:'8px'}}>
+            Net Profit (Margin {margin}%)
+          </span>
+          <h2 style={{fontSize:'clamp(24px, 3vw, 28px)', fontWeight:'800', color:'var(--success)', letterSpacing:'-0.02em', fontVariantNumeric:'tabular-nums'}}>
+            {formatRp(netProfit)}
+          </h2>
+          <div style={{display:'flex', alignItems:'center', gap:'6px', marginTop:'12px'}}>
+            <span className="badge badge-success" style={{background:'rgba(5,150,105,0.1)'}}><TrendingUp size={12} /> Laba Bersih</span>
+          </div>
+        </div>
+
+        <div className="card" style={{padding:'24px', borderTop:'3px solid var(--error)'}}>
+          <span style={{fontSize:'12px', fontWeight:'700', color:'var(--text-3)', textTransform:'uppercase', letterSpacing:'0.05em', display:'block', marginBottom:'8px'}}>
+            Pengeluaran Operasional
+          </span>
+          <h2 style={{fontSize:'clamp(24px, 3vw, 28px)', fontWeight:'800', color:'var(--text-1)', letterSpacing:'-0.02em', fontVariantNumeric:'tabular-nums'}}>
+            {formatRp(totalExpense)}
+          </h2>
+          <div style={{display:'flex', alignItems:'center', gap:'6px', marginTop:'12px'}}>
+            <span className="badge badge-error" style={{background:'rgba(220,38,38,0.1)'}}><DollarSign size={12} /> Biaya Keluar</span>
+          </div>
+        </div>
+
+      </div>
+
+      {/* ── PLACEHOLDER CHARTS ── */}
+      <div className="card" style={{padding:'40px 24px', textAlign:'center'}}>
+        <div style={{width:'64px', height:'64px', borderRadius:'16px', background:'var(--primary-light)', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 20px'}}>
+          <Activity size={32} color="var(--primary)" />
+        </div>
+        <h3 style={{fontSize:'18px', fontWeight:'700', color:'var(--text-1)', marginBottom:'8px'}}>Visualisasi Grafik Segera Hadir</h3>
+        <p style={{fontSize:'14px', color:'var(--text-3)', maxWidth:'400px', margin:'0 auto', lineHeight:'1.6'}}>
+          Fitur grafik interaktif untuk melihat tren pertumbuhan omset per bulan sedang dalam tahap pengembangan oleh tim @careermc.academy.
+        </p>
+      </div>
+
     </div>
   );
 };
