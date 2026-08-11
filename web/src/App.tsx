@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { Sidebar, type TabType } from './components/Sidebar';
 import { Navbar } from './components/Navbar';
-import { BottomNav, type TabType } from './components/BottomNav';
+import { BottomNav } from './components/BottomNav';
 
 import { LoginPage } from './pages/LoginPage';
 import { WizardPage } from './pages/WizardPage';
@@ -139,6 +140,23 @@ const MainApp: React.FC = () => {
     await deleteRateCard(id);
   };
 
+  // Helper for title header
+  const getPageTitle = () => {
+    if (subView === 'booking_detail') return 'Detail Job Acara';
+    if (subView === 'invoice') return 'Invoice Pelunasan';
+    if (subView === 'clients') return 'Daftar Klien & WO';
+    if (subView === 'price_list') return 'Katalog Rate Card';
+
+    switch (activeTab) {
+      case 'home': return 'Dashboard Overview';
+      case 'bookings': return 'Jadwal Acara Manggung';
+      case 'daymode': return 'Mode Hari H (Panggung)';
+      case 'finance': return 'Keuangan & Cashflow';
+      case 'profile': return 'Profil MC Studio';
+      default: return 'MCJobId';
+    }
+  };
+
   // Render Page Content based on tab & subView
   const renderContent = () => {
     if (subView === 'booking_detail' && selectedBooking) {
@@ -256,16 +274,40 @@ const MainApp: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col justify-between">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex text-slate-900 dark:text-slate-100 transition-colors">
+      {/* Desktop Sidebar */}
       {activeTab !== 'daymode' && (
-        <Navbar
+        <Sidebar
+          activeTab={activeTab}
+          onChangeTab={(t) => {
+            setSubView('main');
+            setActiveTab(t);
+          }}
+          onOpenCreateJob={() => {
+            setSubView('main');
+            setActiveTab('bookings');
+          }}
           isDarkMode={isDarkMode}
           onToggleDarkMode={() => setIsDarkMode(!isDarkMode)}
         />
       )}
 
-      <main className="flex-1 px-4 pt-4 pb-20">{renderContent()}</main>
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {activeTab !== 'daymode' && (
+          <Navbar
+            isDarkMode={isDarkMode}
+            onToggleDarkMode={() => setIsDarkMode(!isDarkMode)}
+            title={getPageTitle()}
+          />
+        )}
 
+        <main className="flex-1 p-4 md:p-8 pb-24 md:pb-8 overflow-y-auto">
+          {renderContent()}
+        </main>
+      </div>
+
+      {/* Mobile Floating Bottom Nav */}
       {activeTab !== 'daymode' && subView === 'main' && (
         <BottomNav
           activeTab={activeTab}

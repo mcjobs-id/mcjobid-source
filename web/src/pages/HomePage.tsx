@@ -1,6 +1,19 @@
-import React, { useMemo } from 'react';
-import { Calendar, Plus, Zap, FileText, TrendingUp, ChevronRight } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+import React from 'react';
+import { 
+  Calendar, 
+  DollarSign, 
+  Clock, 
+  Plus, 
+  FileText, 
+  Users, 
+  Tag, 
+  ArrowRight, 
+  Sparkles,
+  TrendingUp,
+  AlertCircle,
+  CheckCircle2,
+  MapPin
+} from 'lucide-react';
 import type { Booking } from '../types';
 
 interface HomePageProps {
@@ -18,208 +31,280 @@ export const HomePage: React.FC<HomePageProps> = ({
   onOpenBookingDetail,
   onOpenDayMode
 }) => {
-  const { userProfile } = useAuth();
+  // Financial metrics calculation
+  const totalJobs = bookings.length;
+  
+  const totalRevenue = bookings.reduce((sum, b) => sum + (b.totalFee || 0), 0);
+  const totalPaid = bookings.reduce((sum, b) => sum + (b.dpAmount || 0), 0);
+  const totalUnpaid = bookings.reduce((sum, b) => {
+    if (b.paymentStatus === 'PAID') return sum;
+    return sum + (b.totalFee - (b.dpAmount || 0));
+  }, 0);
 
-  // Financial summary
-  const summary = useMemo(() => {
-    let totalFee = 0;
-    let totalDp = 0;
-    bookings.forEach((b) => {
-      totalFee += b.fee || 0;
-      totalDp += b.dp || 0;
-    });
-    return {
-      totalFee,
-      totalDp,
-      remaining: totalFee - totalDp,
-      totalJobs: bookings.length
-    };
-  }, [bookings]);
+  // Filter upcoming jobs sorted by date
+  const upcomingBookings = bookings
+    .filter(b => b.status !== 'CANCELLED')
+    .sort((a, b) => new Date(a.eventDate).getTime() - new Date(b.eventDate).getTime())
+    .slice(0, 5);
 
-  // Next upcoming job
-  const upcomingJobs = useMemo(() => {
-    const today = new Date().toISOString().split('T')[0];
-    return bookings
-      .filter((b) => b.date >= today && b.status !== 'completed')
-      .sort((a, b) => a.date.localeCompare(b.date));
-  }, [bookings]);
-
-  const todayJob = useMemo(() => {
-    const today = new Date().toISOString().split('T')[0];
-    return bookings.find((b) => b.date === today && b.status !== 'cancelled');
-  }, [bookings]);
-
-  const formatCurrency = (val: number) => {
-    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(val);
-  };
+  const nextJob = upcomingBookings[0];
 
   return (
-    <div className="space-y-5 pb-24 animate-fade-in">
-      {/* Banner / Header */}
-      <div className="bg-gradient-to-r from-indigo-600 to-indigo-700 rounded-3xl p-5 text-white shadow-lg relative overflow-hidden">
-        <div className="absolute -right-10 -bottom-10 w-40 h-40 bg-white/10 rounded-full blur-2xl pointer-events-none" />
-        <p className="text-indigo-200 text-xs font-semibold uppercase tracking-wider">Selamat Datang</p>
-        <h2 className="text-2xl font-extrabold mt-0.5">{userProfile?.stageName || userProfile?.name || 'MC Talent'}</h2>
-        <p className="text-indigo-100 text-xs mt-1 font-medium">Siap memandu acara spektakuler hari ini!</p>
-
-        {/* Quick Stats Pill */}
-        <div className="mt-4 pt-4 border-t border-indigo-500/40 grid grid-cols-3 gap-2 text-center">
+    <div className="space-y-6 animate-fade-in max-w-7xl mx-auto">
+      {/* Welcome Banner */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-indigo-700 via-indigo-600 to-indigo-800 text-white p-6 md:p-8 shadow-xl shadow-indigo-600/15">
+        <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
-            <span className="text-[10px] text-indigo-200 block">Total Job</span>
-            <span className="text-base font-extrabold">{summary.totalJobs}</span>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 backdrop-blur-md text-xs font-semibold text-indigo-100 mb-3">
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Master of Ceremonies Dashboard</span>
+            </div>
+            <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight">
+              Kelola Jadwal, Honorarium & Event MC
+            </h2>
+            <p className="text-indigo-100 text-sm mt-1 max-w-2xl">
+              Pantau jadwal manggung, catatan DP/pelunasan, cetak invoice profesional, dan rundow acara secara real-time.
+            </p>
           </div>
-          <div className="border-x border-indigo-500/40">
-            <span className="text-[10px] text-indigo-200 block">Total Pendapatan</span>
-            <span className="text-xs font-bold truncate block">{formatCurrency(summary.totalFee)}</span>
-          </div>
-          <div>
-            <span className="text-[10px] text-indigo-200 block">Sisa Piutang</span>
-            <span className="text-xs font-bold text-amber-300 truncate block">{formatCurrency(summary.remaining)}</span>
-          </div>
-        </div>
-      </div>
 
-      {/* TODAY JOB HIGHLIGHT (If Any) */}
-      {todayJob && (
-        <div className="bg-amber-500/10 dark:bg-amber-500/20 border-2 border-amber-500/40 rounded-3xl p-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-2xl bg-amber-500 text-slate-900 flex items-center justify-center font-black animate-pulse">
-              <Zap className="w-6 h-6 fill-slate-900" />
-            </div>
-            <div>
-              <span className="text-[10px] font-extrabold uppercase tracking-wide text-amber-600 dark:text-amber-400">
-                EVENT HARI INI!
-              </span>
-              <h4 className="text-sm font-bold text-slate-900 dark:text-white leading-tight">{todayJob.name}</h4>
-              <p className="text-xs text-slate-500 dark:text-slate-400">{todayJob.start ? `${todayJob.start} WIB` : 'Jadwal Hari Ini'} • {todayJob.loc || 'Lokasi belum diset'}</p>
-            </div>
+            <button
+              onClick={onOpenCreateJob}
+              className="py-3 px-5 rounded-2xl bg-white text-indigo-700 font-bold text-sm hover:bg-indigo-50 active:scale-95 shadow-md transition-all flex items-center gap-2 cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Tambah Acara Baru</span>
+            </button>
           </div>
-          <button
-            onClick={() => onOpenDayMode(todayJob)}
-            className="py-2 px-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs shadow-md"
-          >
-            Mode Hari H
-          </button>
-        </div>
-      )}
-
-      {/* QUICK ACTIONS */}
-      <div>
-        <h3 className="text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2.5">
-          Aksi Cepat
-        </h3>
-        <div className="grid grid-cols-4 gap-2.5">
-          <button
-            onClick={onOpenCreateJob}
-            className="flex flex-col items-center justify-center p-3 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/60 shadow-sm active:scale-95 transition-all"
-          >
-            <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mb-1">
-              <Plus className="w-5 h-5 stroke-[2.5]" />
-            </div>
-            <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200 text-center leading-tight">Tambah Job</span>
-          </button>
-
-          <button
-            onClick={() => onNavigateTab('daymode')}
-            className="flex flex-col items-center justify-center p-3 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/60 shadow-sm active:scale-95 transition-all"
-          >
-            <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 flex items-center justify-center mb-1">
-              <Zap className="w-5 h-5 stroke-[2.5]" />
-            </div>
-            <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200 text-center leading-tight">Mode Hari H</span>
-          </button>
-
-          <button
-            onClick={() => onNavigateTab('finance')}
-            className="flex flex-col items-center justify-center p-3 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/60 shadow-sm active:scale-95 transition-all"
-          >
-            <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mb-1">
-              <FileText className="w-5 h-5 stroke-[2.5]" />
-            </div>
-            <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200 text-center leading-tight">Invoice</span>
-          </button>
-
-          <button
-            onClick={() => onNavigateTab('finance')}
-            className="flex flex-col items-center justify-center p-3 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/60 shadow-sm active:scale-95 transition-all"
-          >
-            <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 flex items-center justify-center mb-1">
-              <TrendingUp className="w-5 h-5 stroke-[2.5]" />
-            </div>
-            <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200 text-center leading-tight">Keuangan</span>
-          </button>
         </div>
       </div>
 
-      {/* UPCOMING EVENTS LIST */}
-      <div>
-        <div className="flex items-center justify-between mb-2.5">
-          <h3 className="text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-            Acara Mendatang ({upcomingJobs.length})
-          </h3>
-          <button
-            onClick={() => onNavigateTab('bookings')}
-            className="text-xs font-bold text-indigo-600 dark:text-indigo-400 flex items-center hover:underline"
-          >
-            Lihat Semua <ChevronRight className="w-3.5 h-3.5 ml-0.5" />
-          </button>
+      {/* Financial Metrics Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-sm flex items-center justify-between">
+          <div>
+            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+              Total Job MC
+            </p>
+            <p className="text-2xl font-black text-slate-900 dark:text-white mt-1">
+              {totalJobs} <span className="text-xs font-normal text-slate-400">Acara</span>
+            </p>
+          </div>
+          <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+            <Calendar className="w-6 h-6" />
+          </div>
         </div>
 
-        {upcomingJobs.length === 0 ? (
-          <div className="card text-center py-8">
-            <Calendar className="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto mb-2" />
-            <h4 className="text-sm font-bold text-slate-700 dark:text-slate-300">Belum Ada Jadwal Job</h4>
-            <p className="text-xs text-slate-400 mt-1">Klik "Tambah Job" untuk memasukkan jadwal MC baru.</p>
+        <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-sm flex items-center justify-between">
+          <div>
+            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+              Estimasi Pemasukan
+            </p>
+            <p className="text-2xl font-black text-slate-900 dark:text-white mt-1">
+              Rp {totalRevenue.toLocaleString('id-ID')}
+            </p>
           </div>
-        ) : (
-          <div className="space-y-3">
-            {upcomingJobs.slice(0, 3).map((job) => {
-              const remainingPay = (job.fee || 0) - (job.dp || 0);
-              const isPaidFull = remainingPay <= 0;
+          <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+            <TrendingUp className="w-6 h-6" />
+          </div>
+        </div>
 
-              return (
+        <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-sm flex items-center justify-between">
+          <div>
+            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+              DP / Terbayar
+            </p>
+            <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1">
+              Rp {totalPaid.toLocaleString('id-ID')}
+            </p>
+          </div>
+          <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+            <CheckCircle2 className="w-6 h-6" />
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-sm flex items-center justify-between">
+          <div>
+            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+              Sisa Piutang Job
+            </p>
+            <p className="text-2xl font-black text-amber-600 dark:text-amber-400 mt-1">
+              Rp {totalUnpaid.toLocaleString('id-ID')}
+            </p>
+          </div>
+          <div className="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+            <AlertCircle className="w-6 h-6" />
+          </div>
+        </div>
+      </div>
+
+      {/* Main Grid Section: Desktop Multi-Column Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Column: Upcoming Jobs List (2 cols on lg) */}
+        <div className="lg:col-span-2 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <Calendar className="w-5 h-5 text-indigo-600" />
+              <span>Jadwal Manggung Mendatang</span>
+            </h3>
+            <button
+              onClick={() => onNavigateTab('bookings')}
+              className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 flex items-center gap-1 cursor-pointer"
+            >
+              <span>Lihat Semua</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          {upcomingBookings.length === 0 ? (
+            <div className="bg-white dark:bg-slate-800 p-8 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 text-center space-y-3">
+              <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-700 mx-auto flex items-center justify-center text-slate-400">
+                <Calendar className="w-6 h-6" />
+              </div>
+              <p className="text-sm font-semibold text-slate-600 dark:text-slate-300">
+                Belum ada jadwal acara mendatang
+              </p>
+              <button
+                onClick={onOpenCreateJob}
+                className="py-2 px-4 rounded-xl bg-indigo-600 text-white font-semibold text-xs inline-flex items-center gap-1.5 cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Buat Jadwal Pertama</span>
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {upcomingBookings.map((b) => (
                 <div
-                  key={job.id}
-                  onClick={() => onOpenBookingDetail(job)}
-                  className="card hover:border-indigo-300 dark:hover:border-indigo-600 cursor-pointer active:scale-[0.99] transition-all flex items-center justify-between"
+                  key={b.id}
+                  onClick={() => onOpenBookingDetail(b)}
+                  className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-sm hover:shadow-md hover:border-indigo-300 dark:hover:border-indigo-600 transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-4"
                 >
-                  <div className="flex items-center gap-3.5">
-                    {/* Date badge */}
-                    <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 flex flex-col items-center justify-center font-extrabold border border-indigo-100 dark:border-slate-700">
-                      <span className="text-[10px] uppercase font-bold text-slate-400 leading-none">
-                        {new Date(job.date).toLocaleDateString('id-ID', { month: 'short' })}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-2">
+                      <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-400">
+                        {b.category || 'Wedding'}
                       </span>
-                      <span className="text-lg leading-tight">
-                        {new Date(job.date).getDate()}
+                      <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
+                        b.paymentStatus === 'PAID'
+                          ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400'
+                          : b.dpAmount > 0
+                          ? 'bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-400'
+                          : 'bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-400'
+                      }`}>
+                        {b.paymentStatus === 'PAID' ? 'LUNAS' : b.dpAmount > 0 ? 'DP' : 'BELUM BAYAR'}
                       </span>
                     </div>
 
-                    <div>
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 inline-block mb-1">
-                        {job.category || 'Wedding'}
+                    <h4 className="text-base font-bold text-slate-900 dark:text-white">
+                      {b.eventTitle || b.clientName}
+                    </h4>
+
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
+                      <span className="flex items-center gap-1">
+                        <Calendar className="w-3.5 h-3.5 text-indigo-500" />
+                        {b.eventDate}
                       </span>
-                      <h4 className="text-sm font-bold text-slate-900 dark:text-white leading-tight">
-                        {job.name}
-                      </h4>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                        Klien: {job.client || 'Umum'} • {job.loc || 'Lokasi TBD'}
-                      </p>
+                      {b.venue && (
+                        <span className="flex items-center gap-1 truncate max-w-xs">
+                          <MapPin className="w-3.5 h-3.5 text-rose-500" />
+                          {b.venue}
+                        </span>
+                      )}
                     </div>
                   </div>
 
-                  <div className="text-right">
-                    <span className="text-xs font-extrabold text-slate-900 dark:text-white block">
-                      {formatCurrency(job.fee)}
-                    </span>
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full inline-block mt-1 ${isPaidFull ? 'badge-paid' : job.dp > 0 ? 'badge-partial' : 'badge-unpaid'}`}>
-                      {isPaidFull ? 'Lunas' : job.dp > 0 ? 'DP Masuk' : 'Belum DP'}
+                  <div className="flex items-center sm:flex-col sm:items-end justify-between border-t sm:border-t-0 pt-3 sm:pt-0 border-slate-100 dark:border-slate-700">
+                    <span className="text-xs text-slate-400">Honorarium</span>
+                    <span className="text-base font-black text-indigo-600 dark:text-indigo-400">
+                      Rp {(b.totalFee || 0).toLocaleString('id-ID')}
                     </span>
                   </div>
                 </div>
-              );
-            })}
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Right Column: Quick Tools & Stage Mode Shortcut */}
+        <div className="space-y-6">
+          {/* Stage Mode Spotlight */}
+          {nextJob && (
+            <div className="bg-gradient-to-br from-slate-900 to-indigo-950 text-white p-5 rounded-2xl shadow-lg border border-slate-800 relative overflow-hidden space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/30 text-indigo-300 border border-indigo-500/40 flex items-center gap-1">
+                  <Clock className="w-3 h-3" /> Mode Hari H
+                </span>
+                <span className="text-xs text-slate-400">{nextJob.eventDate}</span>
+              </div>
+
+              <div>
+                <h4 className="text-sm text-slate-400 font-medium">Acara Berikutnya:</h4>
+                <h3 className="text-lg font-bold text-white leading-tight mt-0.5">
+                  {nextJob.eventTitle}
+                </h3>
+                <p className="text-xs text-indigo-300 mt-1 flex items-center gap-1">
+                  <MapPin className="w-3 h-3" /> {nextJob.venue || 'Lokasi belum diisi'}
+                </p>
+              </div>
+
+              <button
+                onClick={() => onOpenDayMode(nextJob)}
+                className="w-full py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer"
+              >
+                <span>Buka Mode Hari H (Stage Control)</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+
+          {/* Quick Hub Shortcuts */}
+          <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 space-y-3">
+            <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-indigo-600" />
+              <span>Menu Akses Cepat</span>
+            </h4>
+
+            <div className="grid grid-cols-2 gap-2.5">
+              <button
+                onClick={() => onNavigateTab('finance')}
+                className="p-3 rounded-xl bg-slate-50 dark:bg-slate-700/50 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 border border-slate-200/60 dark:border-slate-700 text-left transition-all group cursor-pointer"
+              >
+                <DollarSign className="w-5 h-5 text-indigo-600 mb-1 group-hover:scale-110 transition-transform" />
+                <p className="text-xs font-bold text-slate-800 dark:text-slate-200">Laporan Keuangan</p>
+                <p className="text-[10px] text-slate-400">Grafik & Cashflow</p>
+              </button>
+
+              <button
+                onClick={() => onNavigateTab('clients')}
+                className="p-3 rounded-xl bg-slate-50 dark:bg-slate-700/50 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 border border-slate-200/60 dark:border-slate-700 text-left transition-all group cursor-pointer"
+              >
+                <Users className="w-5 h-5 text-emerald-600 mb-1 group-hover:scale-110 transition-transform" />
+                <p className="text-xs font-bold text-slate-800 dark:text-slate-200">Daftar Klien & WO</p>
+                <p className="text-[10px] text-slate-400">Kontak & Instansi</p>
+              </button>
+
+              <button
+                onClick={() => onNavigateTab('price_list')}
+                className="p-3 rounded-xl bg-slate-50 dark:bg-slate-700/50 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 border border-slate-200/60 dark:border-slate-700 text-left transition-all group cursor-pointer"
+              >
+                <Tag className="w-5 h-5 text-amber-600 mb-1 group-hover:scale-110 transition-transform" />
+                <p className="text-xs font-bold text-slate-800 dark:text-slate-200">Rate Card MC</p>
+                <p className="text-[10px] text-slate-400">Katalog Paket</p>
+              </button>
+
+              <button
+                onClick={() => onNavigateTab('bookings')}
+                className="p-3 rounded-xl bg-slate-50 dark:bg-slate-700/50 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 border border-slate-200/60 dark:border-slate-700 text-left transition-all group cursor-pointer"
+              >
+                <FileText className="w-5 h-5 text-indigo-600 mb-1 group-hover:scale-110 transition-transform" />
+                <p className="text-xs font-bold text-slate-800 dark:text-slate-200">Cetak Invoice</p>
+                <p className="text-[10px] text-slate-400">PDF Pelunasan</p>
+              </button>
+            </div>
           </div>
-        )}
+        </div>
       </div>
     </div>
   );
