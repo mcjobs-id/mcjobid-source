@@ -3,19 +3,21 @@ import { ArrowLeft, Plus, Tag, Trash2, Edit2, Copy, CheckCircle2 } from 'lucide-
 import type { RateCard } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { Modal } from '../components/Modal';
-import { saveRateCard, deleteRateCard } from '../services/firebaseService';
 
 interface PriceListPageProps {
   onBack: () => void;
   rateCards: RateCard[];
+  onSaveRateCard?: (card: RateCard) => Promise<void>;
+  onDeleteRateCard?: (id: string) => Promise<void>;
 }
 
-export const PriceListPage: React.FC<PriceListPageProps> = ({ onBack, rateCards }) => {
+export const PriceListPage: React.FC<PriceListPageProps> = ({ onBack, rateCards, onSaveRateCard, onDeleteRateCard }) => {
   const { currentUser } = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCard, setEditingCard] = useState<RateCard | null>(null);
   
   const [name, setName] = useState('');
+  const [category, setCategory] = useState('Wedding');
   const [price, setPrice] = useState<number | ''>('');
   const [features, setFeatures] = useState('');
   const [notes, setNotes] = useState('');
@@ -26,13 +28,15 @@ export const PriceListPage: React.FC<PriceListPageProps> = ({ onBack, rateCards 
   const openModal = (card?: RateCard) => {
     if (card) {
       setEditingCard(card);
-      setName(card.name);
+      setName(card.name || card.title || '');
+      setCategory(card.category || 'Wedding');
       setPrice(card.price);
-      setFeatures(card.features.join('\n'));
-      setNotes(card.notes || '');
+      setFeatures((card.features || card.inclusions || []).join('\n'));
+      setNotes(card.notes || card.description || '');
     } else {
       setEditingCard(null);
       setName('');
+      setCategory('Wedding');
       setPrice('');
       setFeatures('');
       setNotes('');
@@ -44,18 +48,25 @@ export const PriceListPage: React.FC<PriceListPageProps> = ({ onBack, rateCards 
     e.preventDefault();
     if (!currentUser || price === '') return;
     setSaving(true);
-    
     try {
+      const featureList = features.split('\n').filter(f => f.trim() !== '');
       const cardData: RateCard = {
-        id: editingCard ? editingCard.id : Date.now().toString(),
+        id: editingCard ? editingCard.id : `${Date.now()}-${Math.random().toString(36).slice(2)}`,
         ownerId: currentUser.uid,
         name,
+        title: name,
+        category,
         price: Number(price),
-        features: features.split('\n').filter(f => f.trim() !== ''),
+        features: featureList,
+        inclusions: featureList,
         notes,
+        description: notes,
         createdAt: editingCard ? editingCard.createdAt : new Date().toISOString(),
+        updatedAt: new Date().toISOString()
       };
-      await saveRateCard(currentUser.uid, cardData);
+      if (onSaveRateCard) {
+        await onSaveRateCard(cardData);
+      }
       setIsModalOpen(false);
     } catch (err) {
       console.error(err);
@@ -65,9 +76,9 @@ export const PriceListPage: React.FC<PriceListPageProps> = ({ onBack, rateCards 
   };
 
   const handleDelete = async (id: string) => {
-    if (!currentUser || !confirm('Hapus paket harga ini?')) return;
+    if (!confirm('Hapus paket harga ini?')) return;
     try {
-      await deleteRateCard(currentUser.uid, id);
+      if (onDeleteRateCard) await onDeleteRateCard(id);
     } catch (err) {
       console.error(err);
     }
@@ -169,9 +180,17 @@ export const PriceListPage: React.FC<PriceListPageProps> = ({ onBack, rateCards 
       {/* ── MODAL ── */}
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingCard ? "Edit Paket Harga" : "Tambah Paket Harga"}>
         <form onSubmit={handleSave} style={{display:'flex', flexDirection:'column', gap:'16px'}}>
-          <div>
-            <label className="input-label">Nama Paket *</label>
-            <input type="text" required value={name} onChange={e => setName(e.target.value)} className="input-field" placeholder="Contoh: Gold Wedding Package" />
+          <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px'}}>
+            <div>
+              <label className="input-label">Nama Paket *</label>
+              <input type="text" required value={name} onChange={e => setName(e.target.value)} className="input-field" placeholder="Contoh: Gold Wedding" />
+            </div>
+            <div>
+              <label className="input-label">Kategori</label>
+              <select value={category} onChange={e => setCategory(e.target.value)} className="input-field">
+                {['Wedding','Corporate','Concert','Gathering','Birthday','Seminar','Lainnya'].map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
           </div>
           <div>
             <label className="input-label">Harga (Rp) *</label>

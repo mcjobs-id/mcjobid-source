@@ -29,7 +29,7 @@ export const NotificationPage: React.FC<NotificationPageProps> = ({ onBack, book
       time: b.eventTime || 'TBA',
     })),
     ...unpaidEvents.map(b => {
-      const sisa = (b.totalFee || 0) - (b.dpAmount || 0);
+      const sisa = (b.fee || 0) - (b.dp || 0);
       return {
         id: `pay-${b.id}`,
         type: 'payment',

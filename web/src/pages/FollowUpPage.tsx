@@ -36,8 +36,8 @@ export const FollowUpPage: React.FC<FollowUpPageProps> = ({ onBack, bookings, cl
   const formatRp = (val: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(val);
 
   const generateMessage = (b: Booking) => {
-    const total = b.totalFee || b.fee || 0;
-    const dp = b.dpAmount || b.dp || 0;
+    const total = b.fee || 0;
+    const dp = b.dp || 0;
     const sisa = total - dp;
     const title = b.eventTitle || b.name || 'Event';
     const clientName = b.clientName || b.client || 'Kak';
@@ -114,8 +114,8 @@ export const FollowUpPage: React.FC<FollowUpPageProps> = ({ onBack, bookings, cl
       ) : (
         <div style={{display:'flex', flexDirection:'column', gap:'16px'}}>
           {followUpTargets.map(b => {
-            const total = b.totalFee || b.fee || 0;
-            const dp = b.dpAmount || b.dp || 0;
+            const total = b.fee || 0;
+            const dp = b.dp || 0;
             const sisa = total - dp;
             const clientName = b.clientName || b.client || 'Klien';
             const matchedClient = clients.find(c => c.name.toLowerCase() === clientName.toLowerCase());

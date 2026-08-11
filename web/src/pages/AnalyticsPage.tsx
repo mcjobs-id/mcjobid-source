@@ -1,5 +1,6 @@
 import React from 'react';
 import { ArrowLeft, BarChart2, TrendingUp, Calendar, DollarSign, Activity } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import type { Booking, Expense } from '../types';
 
 interface AnalyticsPageProps {
@@ -13,7 +14,7 @@ export const AnalyticsPage: React.FC<AnalyticsPageProps> = ({ onBack, bookings, 
   
   // Calculate yearly metrics
   const yearlyBookings = bookings.filter(b => b.status !== 'CANCELLED' && b.eventDate.startsWith(currentYear.toString()));
-  const totalHonor = yearlyBookings.reduce((sum, b) => sum + (b.totalFee || 0), 0);
+  const totalHonor = yearlyBookings.reduce((sum, b) => sum + (b.fee || 0), 0);
   
   const yearlyExpenses = expenses.filter(e => e.date.startsWith(currentYear.toString()));
   const totalExpense = yearlyExpenses.reduce((sum, e) => sum + (e.amount || 0), 0);
@@ -23,6 +24,28 @@ export const AnalyticsPage: React.FC<AnalyticsPageProps> = ({ onBack, bookings, 
 
   // Format to standard Rp currency without decimals
   const formatRp = (val: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(val);
+
+  // Prepare chart data
+  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+  const chartData = monthNames.map((m, index) => {
+    const monthStr = (index + 1).toString().padStart(2, '0');
+    const monthPrefix = `${currentYear}-${monthStr}`;
+    
+    const monthlyHonor = yearlyBookings
+      .filter(b => b.eventDate.startsWith(monthPrefix))
+      .reduce((sum, b) => sum + (b.fee || 0), 0);
+      
+    const monthlyExpense = yearlyExpenses
+      .filter(e => e.date.startsWith(monthPrefix))
+      .reduce((sum, e) => sum + (e.amount || 0), 0);
+      
+    return {
+      name: m,
+      Omset: monthlyHonor,
+      Pengeluaran: monthlyExpense,
+      Profit: monthlyHonor - monthlyExpense
+    };
+  });
 
   return (
     <div className="animate-fade-in" style={{maxWidth:'1000px', margin:'0 auto', paddingBottom:'24px'}}>
@@ -84,15 +107,34 @@ export const AnalyticsPage: React.FC<AnalyticsPageProps> = ({ onBack, bookings, 
 
       </div>
 
-      {/* ── PLACEHOLDER CHARTS ── */}
-      <div className="card" style={{padding:'40px 24px', textAlign:'center'}}>
-        <div style={{width:'64px', height:'64px', borderRadius:'16px', background:'var(--primary-light)', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 20px'}}>
-          <Activity size={32} color="var(--primary)" />
+      {/* ── CHARTS ── */}
+      <div className="card" style={{padding:'24px'}}>
+        <h3 style={{fontSize:'16px', fontWeight:'700', color:'var(--text-1)', marginBottom:'20px'}}>Tren Keuangan {currentYear}</h3>
+        <div style={{height:'300px', width:'100%'}}>
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart
+              data={chartData}
+              margin={{ top: 10, right: 10, left: 20, bottom: 0 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
+              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize: 12, fill: 'var(--text-3)'}} />
+              <YAxis 
+                axisLine={false} 
+                tickLine={false} 
+                tick={{fontSize: 12, fill: 'var(--text-3)'}}
+                tickFormatter={(value) => `Rp${(value/1000000).toFixed(0)}M`}
+              />
+              <Tooltip 
+                formatter={(value: number) => [formatRp(value), undefined]}
+                contentStyle={{borderRadius: '8px', border: '1px solid var(--border)', boxShadow: 'var(--shadow-sm)'}}
+              />
+              <Legend wrapperStyle={{fontSize: '12px', paddingTop: '10px'}} />
+              <Bar dataKey="Omset" fill="var(--primary)" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="Pengeluaran" fill="var(--error)" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="Profit" fill="var(--success)" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
         </div>
-        <h3 style={{fontSize:'18px', fontWeight:'700', color:'var(--text-1)', marginBottom:'8px'}}>Visualisasi Grafik Segera Hadir</h3>
-        <p style={{fontSize:'14px', color:'var(--text-3)', maxWidth:'400px', margin:'0 auto', lineHeight:'1.6'}}>
-          Fitur grafik interaktif untuk melihat tren pertumbuhan omset per bulan sedang dalam tahap pengembangan oleh tim @careermc.academy.
-        </p>
       </div>
 
     </div>

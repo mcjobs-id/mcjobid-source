@@ -67,6 +67,12 @@ service cloud.firestore {
       allow create: if isAuthenticated() && request.resource.data.ownerId == request.auth.uid;
     }
 
+    // Todos collection
+    match /todos/{todoId} {
+      allow read, update, delete: if isDataOwner();
+      allow create: if isAuthenticated() && request.resource.data.ownerId == request.auth.uid;
+    }
+
     // Rate cards collection
     match /rate_cards/{rateCardId} {
       allow read, update, delete: if isDataOwner();

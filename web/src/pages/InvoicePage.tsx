@@ -6,10 +6,11 @@ import html2pdf from 'html2pdf.js';
 
 interface InvoicePageProps {
   booking: Booking | null;
+  payments?: Payment[]; // Add payments
   onBack: () => void;
 }
 
-export const InvoicePage: React.FC<InvoicePageProps> = ({ booking, onBack }) => {
+export const InvoicePage: React.FC<InvoicePageProps> = ({ booking, payments = [], onBack }) => {
   const { userProfile } = useAuth();
   const invoiceRef = useRef<HTMLDivElement>(null);
 
@@ -26,10 +27,15 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ booking, onBack }) => 
   }
 
   const invoiceNumber = `INV-${booking.id.substring(booking.id.length - 6).toUpperCase()}`;
-  const totalFee = booking.totalFee || 0;
-  const dpAmount = booking.dpAmount || 0;
-  const isPaid = booking.paymentStatus === 'PAID';
-  const remaining = isPaid ? 0 : totalFee - dpAmount;
+  const totalFee = booking.fee || 0;
+  
+  const bookingPayments = payments.filter(p => p.bookingId === booking.id);
+  const totalPaid = bookingPayments.length > 0 
+    ? bookingPayments.reduce((s, p) => s + p.amount, 0)
+    : (booking.dp || 0);
+
+  const isPaid = booking.paymentStatus === 'PAID' || totalPaid >= totalFee;
+  const remaining = isPaid ? 0 : totalFee - totalPaid;
   
   const formattedDate = new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(booking.eventDate));
   
@@ -149,9 +155,9 @@ export const InvoicePage: React.FC<InvoicePageProps> = ({ booking, onBack }) => 
                 <span style={{fontSize:'13px', color:'#4B5563'}}>Subtotal</span>
                 <span style={{fontSize:'13px', fontWeight:'600', color:'#111827', fontVariantNumeric:'tabular-nums'}}>{formatRp(totalFee)}</span>
               </div>
-              <div style={{display:'flex', justifyContent:'space-between', padding:'8px 0', borderBottom:'1px solid #E4E7EC'}}>
-                <span style={{fontSize:'13px', color:'#4B5563'}}>DP (Down Payment)</span>
-                <span style={{fontSize:'13px', fontWeight:'600', color:'#059669', fontVariantNumeric:'tabular-nums'}}>- {formatRp(dpAmount)}</span>
+              <div style={{display:'flex', justifyContent:'space-between', paddingBottom:'12px', borderBottom:'1px solid var(--border)'}}>
+                <span style={{fontSize:'13px', color:'#4B5563'}}>Sudah Dibayar</span>
+                <span style={{fontSize:'13px', fontWeight:'600', color:'#059669', fontVariantNumeric:'tabular-nums'}}>- {formatRp(totalPaid)}</span>
               </div>
               <div style={{display:'flex', justifyContent:'space-between', padding:'12px 0', marginTop:'4px'}}>
                 <span style={{fontSize:'15px', fontWeight:'800', color:'#111827'}}>Total Tagihan</span>

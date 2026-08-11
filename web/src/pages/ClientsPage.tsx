@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Users, Plus, Phone, Mail, MapPin, Building, Trash2, Edit2, Search } from 'lucide-react';
+import { Users, Plus, Phone, Mail, MapPin, Building, Trash2, Edit2, Search, Star, User } from 'lucide-react';
 import type { Client } from '../types';
 import { Modal } from '../components/Modal';
+import { useAuth } from '../context/AuthContext';
 
 interface ClientsPageProps {
   clients: Client[];
@@ -10,6 +11,8 @@ interface ClientsPageProps {
 }
 
 export const ClientsPage: React.FC<ClientsPageProps> = ({ clients, onSaveClient, onDeleteClient }) => {
+  const { currentUser } = useAuth();
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -49,14 +52,16 @@ export const ClientsPage: React.FC<ClientsPageProps> = ({ clients, onSaveClient,
     setSaving(true);
     try {
       const clientData: Client = {
-        id: editingClient ? editingClient.id : Date.now().toString(),
-        ownerId: '',
+        id: editingClient ? editingClient.id : `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        ownerId: currentUser?.uid || '',
         name,
         type: type as any,
         phone,
         email,
         address,
         notes,
+        isFavorite: editingClient?.isFavorite ?? false,
+        isArchived: editingClient?.isArchived ?? false,
         createdAt: editingClient ? editingClient.createdAt : new Date().toISOString()
       };
       await onSaveClient(clientData);

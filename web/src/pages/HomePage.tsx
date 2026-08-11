@@ -54,9 +54,9 @@ export const HomePage: React.FC<HomePageProps> = ({
     return true;
   });
 
-  const totalHonor  = filteredBookings.reduce((s, b) => s + (b.totalFee || 0), 0);
-  const totalPaid   = filteredBookings.reduce((s, b) => s + (b.dpAmount || 0), 0);
-  const totalUnpaid = filteredBookings.reduce((s, b) => b.paymentStatus === 'PAID' ? s : s + ((b.totalFee || 0) - (b.dpAmount || 0)), 0);
+  const totalHonor  = filteredBookings.reduce((s, b) => s + (b.fee || 0), 0);
+  const totalPaid   = filteredBookings.reduce((s, b) => s + (b.dp || 0), 0);
+  const totalUnpaid = filteredBookings.reduce((s, b) => b.paymentStatus === 'PAID' ? s : s + ((b.fee || 0) - (b.dp || 0)), 0);
   const totalJobs   = filteredBookings.length;
 
   const now = new Date();
@@ -211,8 +211,8 @@ export const HomePage: React.FC<HomePageProps> = ({
                 <div style={{flex:1, overflow:'hidden'}}>
                   <div style={{display:'flex', alignItems:'center', gap:'8px', marginBottom:'6px', flexWrap:'wrap'}}>
                     <span className="badge badge-primary">{nextBooking.category || 'Wedding'}</span>
-                    <span className={`badge badge-dot ${nextBooking.paymentStatus === 'PAID' ? 'badge-success' : nextBooking.dpAmount > 0 ? 'badge-warning' : 'badge-error'}`}>
-                      {nextBooking.paymentStatus === 'PAID' ? 'LUNAS' : nextBooking.dpAmount > 0 ? 'DP MASUK' : 'BELUM BAYAR'}
+                    <span className={`badge badge-dot ${nextBooking.paymentStatus === 'PAID' ? 'badge-success' : nextBooking.dp > 0 ? 'badge-warning' : 'badge-error'}`}>
+                      {nextBooking.paymentStatus === 'PAID' ? 'LUNAS' : nextBooking.dp > 0 ? 'DP MASUK' : 'BELUM BAYAR'}
                     </span>
                   </div>
                   <h3 style={{fontSize:'16px', fontWeight:'700', color:'var(--text-1)', letterSpacing:'-0.01em', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>
@@ -239,7 +239,7 @@ export const HomePage: React.FC<HomePageProps> = ({
               <div style={{borderTop:'1px solid var(--border)', paddingTop:'14px', display:'flex', alignItems:'center', justifyContent:'space-between'}}>
                 <span style={{fontSize:'11px', color:'var(--text-4)'}}>Honorarium MC</span>
                 <span style={{fontSize:'18px', fontWeight:'700', color:'var(--primary)', letterSpacing:'-0.01em', fontVariantNumeric:'tabular-nums'}}>
-                  {formatRpFull(nextBooking.totalFee || 0)}
+                  {formatRpFull(nextBooking.fee || 0)}
                 </span>
               </div>
             </div>
@@ -278,7 +278,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                     <p style={{fontSize:'13px', fontWeight:'600', color:'var(--text-1)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{b.eventTitle || b.clientName}</p>
                     <p style={{fontSize:'11px', color:'var(--text-3)'}}>{b.eventDate} • {b.category || 'Event'}</p>
                   </div>
-                  <span style={{fontSize:'13px', fontWeight:'700', color:'var(--text-1)', flexShrink:0, fontVariantNumeric:'tabular-nums'}}>{formatRp(b.totalFee || 0)}</span>
+                  <span style={{fontSize:'13px', fontWeight:'700', color:'var(--text-1)', flexShrink:0, fontVariantNumeric:'tabular-nums'}}>{formatRp(b.fee || 0)}</span>
                 </div>
               ))}
             </div>
@@ -297,8 +297,14 @@ export const HomePage: React.FC<HomePageProps> = ({
             ].map((item, i, arr) => {
               const Icon = item.icon;
               const inner = (
-                <div key={item.label} style={{display:'flex', alignItems:'center', gap:'12px', padding:'14px 16px', borderBottom: i < arr.length - 1 ? '1px solid var(--border)' : 'none', cursor:'pointer', transition:'background 0.15s'}}
-                  onClick={item.href ? undefined : () => onNavigateTab(item.id)}
+                <div key={item.label} style={{display:'flex', alignItems:'center', gap:'12px', padding:'14px 16px', borderBottom: i < arr.length - 1 ? '1px solid var(--border)' : 'none', cursor:'pointer', transition:'background 0.15s', opacity: item.id === 'testimonial' ? 0.6 : 1}}
+                  onClick={item.href ? undefined : () => {
+                    if (item.id === 'testimonial') {
+                      alert('Fitur Testimoni Klien masih dalam tahap pengembangan (Coming Soon).');
+                    } else {
+                      onNavigateTab(item.id);
+                    }
+                  }}
                 >
                   <div style={{width:'36px', height:'36px', borderRadius:'10px', background:item.bg, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0}}>
                     <Icon size={17} color={item.color} />

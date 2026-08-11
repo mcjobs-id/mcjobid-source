@@ -1,43 +1,38 @@
 import React, { useState } from 'react';
 import { ArrowLeft, CheckSquare, Plus, Trash2 } from 'lucide-react';
+import type { TodoItem } from '../types';
+import { useAuth } from '../context/AuthContext';
 
 interface TodoPageProps {
+  todos: TodoItem[];
+  onSaveTodo: (todo: TodoItem) => Promise<void>;
+  onDeleteTodo: (id: string) => Promise<void>;
   onBack: () => void;
 }
 
-interface Todo {
-  id: string;
-  text: string;
-  completed: boolean;
-}
-
-const DEFAULT_TODOS: Todo[] = [
-  { id: '1', text: 'Konfirmasi Rundown dengan WO untuk acara weekend ini', completed: false },
-  { id: '2', text: 'Siapkan & cuci jas/kebaya untuk event Sabtu', completed: false },
-  { id: '3', text: 'Meeting koordinasi via Zoom dengan klien corporate', completed: true },
-  { id: '4', text: 'Update Rate Card 2025 di Instagram', completed: false },
-];
-
-export const TodoPage: React.FC<TodoPageProps> = ({ onBack }) => {
-  const [todos, setTodos] = useState<Todo[]>(DEFAULT_TODOS);
+export const TodoPage: React.FC<TodoPageProps> = ({ todos, onSaveTodo, onDeleteTodo, onBack }) => {
   const [newTask, setNewTask] = useState('');
+  const { currentUser } = useAuth();
 
-  const handleAdd = (e: React.FormEvent) => {
+  const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newTask.trim()) return;
-    setTodos([{ id: Date.now().toString(), text: newTask, completed: false }, ...todos]);
+    if (!newTask.trim() || !currentUser?.uid) return;
+    
+    const newTodo: TodoItem = {
+      id: Date.now().toString(),
+      ownerId: currentUser.uid,
+      title: newTask,
+      isCompleted: false,
+    };
+    await onSaveTodo(newTodo);
     setNewTask('');
   };
 
-  const toggleTodo = (id: string) => {
-    setTodos(todos.map(t => t.id === id ? { ...t, completed: !t.completed } : t));
+  const toggleTodo = async (todo: TodoItem) => {
+    await onSaveTodo({ ...todo, isCompleted: !todo.isCompleted });
   };
 
-  const deleteTodo = (id: string) => {
-    setTodos(todos.filter(t => t.id !== id));
-  };
-
-  const completedCount = todos.filter(t => t.completed).length;
+  const completedCount = todos.filter(t => t.isCompleted).length;
 
   return (
     <div className="animate-fade-in" style={{maxWidth:'800px', margin:'0 auto', paddingBottom:'24px'}}>
@@ -101,25 +96,25 @@ export const TodoPage: React.FC<TodoPageProps> = ({ onBack }) => {
           </div>
         ) : (
           todos.map(t => (
-            <div key={t.id} className="card" style={{padding:'16px', display:'flex', alignItems:'flex-start', gap:'12px', transition:'all 0.2s', opacity: t.completed ? 0.6 : 1}}>
+            <div key={t.id} className="card" style={{padding:'16px', display:'flex', alignItems:'flex-start', gap:'12px', transition:'all 0.2s', opacity: t.isCompleted ? 0.6 : 1}}>
               <div 
-                onClick={() => toggleTodo(t.id)}
+                onClick={() => toggleTodo(t)}
                 style={{
-                  width:'24px', height:'24px', borderRadius:'6px', border:`2px solid ${t.completed ? '#7C3AED' : 'var(--border-strong)'}`,
-                  background: t.completed ? '#7C3AED' : 'transparent', display:'flex', alignItems:'center', justifyContent:'center',
+                  width:'24px', height:'24px', borderRadius:'6px', border:`2px solid ${t.isCompleted ? '#7C3AED' : 'var(--border-strong)'}`,
+                  background: t.isCompleted ? '#7C3AED' : 'transparent', display:'flex', alignItems:'center', justifyContent:'center',
                   cursor:'pointer', flexShrink:0, marginTop:'2px', transition:'all 0.15s'
                 }}
               >
-                {t.completed && <CheckSquare size={14} color="white" />}
+                {t.isCompleted && <CheckSquare size={14} color="white" />}
               </div>
               
-              <div style={{flex:1}} onClick={() => toggleTodo(t.id)}>
-                <p style={{fontSize:'14px', fontWeight:'500', color:'var(--text-1)', textDecoration: t.completed ? 'line-through' : 'none', cursor:'pointer', lineHeight:'1.5'}}>
-                  {t.text}
+              <div style={{flex:1}} onClick={() => toggleTodo(t)}>
+                <p style={{fontSize:'14px', fontWeight:'500', color:'var(--text-1)', textDecoration: t.isCompleted ? 'line-through' : 'none', cursor:'pointer', lineHeight:'1.5'}}>
+                  {t.title}
                 </p>
               </div>
 
-              <button onClick={() => deleteTodo(t.id)} className="btn btn-ghost btn-sm" style={{padding:0, width:'32px', height:'32px', color:'var(--error)', flexShrink:0}}>
+              <button onClick={() => onDeleteTodo(t.id)} className="btn btn-ghost btn-sm" style={{padding:0, width:'32px', height:'32px', color:'var(--error)', flexShrink:0}}>
                 <Trash2 size={16} />
               </button>
             </div>

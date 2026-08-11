@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Calendar, Plus, Search, MapPin, ChevronRight, Filter } from 'lucide-react';
+import { Calendar, Plus, Search, MapPin } from 'lucide-react';
 import type { Booking } from '../types';
+import { getBookingName, getBookingClient, getBookingDate, getBookingFee, getBookingDp, getBookingVenue, normalizeStatus } from '../types';
 
 interface AgendaPageProps {
   bookings: Booking[];
@@ -9,7 +10,7 @@ interface AgendaPageProps {
   onOpenCreateJob: () => void;
 }
 
-type AgendaFilter = 'ALL' | 'UPCOMING' | 'COMPLETED' | 'DP_PENDING';
+type AgendaFilter = 'ALL' | 'UPCOMING' | 'COMPLETED' | 'DP_PENDING' | 'CANCELLED';
 
 function formatRpFull(val: number) {
   return `Rp ${val.toLocaleString('id-ID')}`;
@@ -23,20 +24,28 @@ export const AgendaPage: React.FC<AgendaPageProps> = ({ bookings, onOpenDetail, 
 
   const filtered = bookings.filter(b => {
     const q = searchQuery.toLowerCase();
-    const matchSearch = !q ||
-      (b.eventTitle || '').toLowerCase().includes(q) ||
-      (b.clientName || '').toLowerCase().includes(q) ||
-      (b.venue || '').toLowerCase().includes(q);
+    const name = getBookingName(b).toLowerCase();
+    const client = getBookingClient(b).toLowerCase();
+    const venue = getBookingVenue(b).toLowerCase();
+    const matchSearch = !q || name.includes(q) || client.includes(q) || venue.includes(q);
     if (!matchSearch) return false;
 
-    if (activeFilter === 'UPCOMING')   return b.eventDate >= todayStr && b.status !== 'CANCELLED';
-    if (activeFilter === 'COMPLETED')  return b.eventDate < todayStr || b.status === 'COMPLETED';
-    if (activeFilter === 'DP_PENDING') return b.paymentStatus !== 'PAID' && b.status !== 'CANCELLED';
+    const dateStr = getBookingDate(b);
+    const status = normalizeStatus(b.status as string);
+
+    if (activeFilter === 'UPCOMING') return dateStr >= todayStr && status !== 'cancelled';
+    if (activeFilter === 'COMPLETED') return status === 'completed';
+    if (activeFilter === 'DP_PENDING') {
+      const fee = getBookingFee(b);
+      const dp = getBookingDp(b);
+      return status !== 'cancelled' && fee > 0 && dp < fee;
+    }
+    if (activeFilter === 'CANCELLED') return status === 'cancelled';
     return true;
   });
 
   const filterLabels: Record<AgendaFilter, string> = {
-    ALL: 'Semua Job', UPCOMING: 'Mendatang', COMPLETED: 'Selesai', DP_PENDING: 'Belum Lunas'
+    ALL: 'Semua Job', UPCOMING: 'Mendatang', COMPLETED: 'Selesai', DP_PENDING: 'Belum Lunas', CANCELLED: 'Batal'
   };
 
   return (
@@ -105,36 +114,40 @@ export const AgendaPage: React.FC<AgendaPageProps> = ({ bookings, onOpenDetail, 
       ) : (
         <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(280px, 1fr))', gap:'14px'}}>
           {filtered.map(b => {
-            const isPaid = b.paymentStatus === 'PAID';
-            const isDP   = !isPaid && b.dpAmount > 0;
+            const fee = getBookingFee(b);
+            const dp = getBookingDp(b);
+            const outstanding = Math.max(0, fee - dp);
+            const isLunas = fee > 0 && outstanding <= 0;
+            const hasDP = dp > 0 && !isLunas;
+            const status = normalizeStatus(b.status as string);
             return (
-              <div key={b.id} className="card card-interactive" onClick={() => onOpenDetail(b)} style={{padding:'18px', display:'flex', flexDirection:'column', gap:'12px'}}>
+              <div key={b.id} className="card card-interactive" onClick={() => onOpenDetail(b)} style={{padding:'18px', display:'flex', flexDirection:'column', gap:'12px', opacity: status === 'cancelled' ? 0.6 : 1}}>
                 {/* Top row: category + status */}
                 <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', gap:'8px'}}>
                   <span className="badge badge-primary">{b.category || 'Wedding'}</span>
-                  <span className={`badge badge-dot ${isPaid ? 'badge-success' : isDP ? 'badge-warning' : 'badge-error'}`}>
-                    {isPaid ? 'LUNAS' : isDP ? 'DP' : 'BELUM BAYAR'}
+                  <span className={`badge badge-dot ${isLunas ? 'badge-success' : hasDP ? 'badge-warning' : status === 'cancelled' ? 'badge-error' : 'badge-error'}`}>
+                    {isLunas ? 'LUNAS' : hasDP ? 'DP' : status === 'cancelled' ? 'BATAL' : 'BELUM BAYAR'}
                   </span>
                 </div>
 
                 {/* Title + Client */}
                 <div>
                   <h3 style={{fontSize:'15px', fontWeight:'700', color:'var(--text-1)', letterSpacing:'-0.01em', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', marginBottom:'2px'}}>
-                    {b.eventTitle || b.clientName}
+                    {getBookingName(b)}
                   </h3>
-                  <p style={{fontSize:'12px', color:'var(--text-3)'}}>Klien: <span style={{fontWeight:'600', color:'var(--text-2)'}}>{b.clientName}</span></p>
+                  <p style={{fontSize:'12px', color:'var(--text-3)'}}>Klien: <span style={{fontWeight:'600', color:'var(--text-2)'}}>{getBookingClient(b) || '-'}</span></p>
                 </div>
 
                 {/* Date + Venue */}
                 <div style={{display:'flex', flexDirection:'column', gap:'5px'}}>
                   <span style={{fontSize:'12px', color:'var(--text-3)', display:'flex', alignItems:'center', gap:'6px'}}>
                     <Calendar size={12} color="var(--primary)" />
-                    {b.eventDate} {b.eventTime ? `• ${b.eventTime}` : ''}
+                    {getBookingDate(b) || 'Tanggal TBD'} {b.start || b.eventTime ? `• ${b.start || b.eventTime}` : ''}
                   </span>
-                  {b.venue && (
+                  {getBookingVenue(b) && (
                     <span style={{fontSize:'12px', color:'var(--text-3)', display:'flex', alignItems:'center', gap:'6px', overflow:'hidden'}}>
                       <MapPin size={12} color="var(--error)" style={{flexShrink:0}} />
-                      <span style={{overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{b.venue}</span>
+                      <span style={{overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{getBookingVenue(b)}</span>
                     </span>
                   )}
                 </div>
@@ -143,7 +156,7 @@ export const AgendaPage: React.FC<AgendaPageProps> = ({ bookings, onOpenDetail, 
                 <div style={{borderTop:'1px solid var(--border)', paddingTop:'12px', display:'flex', alignItems:'center', justifyContent:'space-between'}}>
                   <span style={{fontSize:'11px', color:'var(--text-4)'}}>Honorarium</span>
                   <span style={{fontSize:'16px', fontWeight:'700', color:'var(--primary)', fontVariantNumeric:'tabular-nums', letterSpacing:'-0.01em'}}>
-                    {formatRpFull(b.totalFee || 0)}
+                    {formatRpFull(fee)}
                   </span>
                 </div>
               </div>
